@@ -49,6 +49,19 @@ const courseSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    attainmentSettings: {
+        targetPercentage: {
+            type: Number,
+            default: 40,
+            min: [1, 'Target percentage must be at least 1%'],
+            max: [100, 'Target percentage cannot exceed 100%'],
+        },
+        minStudentsRequired: {
+            type: Number,
+            default: 1,
+            min: [1, 'Minimum students required must be at least 1'],
+        },
+    },
 }, {
     timestamps: true,
 });

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Assessment = require('../models/Assessment');
+const Question = require('../models/Question');
 
 /**
  * Helper: Verify Course exists and is assigned to the authenticated faculty member.
@@ -253,6 +254,9 @@ const deleteAssessment = async (req, res, next) => {
             res.status(404);
             return next(new Error('Assessment not found in this course.'));
         }
+
+        // Cascade delete all questions belonging to this assessment
+        await Question.deleteMany({ assessment: assessmentId });
 
         res.status(200).json({
             success: true,

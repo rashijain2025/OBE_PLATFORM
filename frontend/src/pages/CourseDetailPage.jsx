@@ -25,6 +25,13 @@ import {
   ClipboardList,
   Percent,
   Layers,
+  Eye,
+  Users,
+  UserPlus,
+  Search,
+  TrendingUp,
+  BarChart3,
+  Check,
 } from 'lucide-react';
 
 export default function CourseDetailPage() {
@@ -77,6 +84,34 @@ export default function CourseDetailPage() {
   const [assessmentSubmitting, setAssessmentSubmitting] = useState(false);
   const [deleteAssessmentModal, setDeleteAssessmentModal] = useState(null);
   const [deleteAssessmentSubmitting, setDeleteAssessmentSubmitting] = useState(false);
+
+  // ── Students State ───────────────────────────────────────────────────
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [studentsError, setStudentsError] = useState('');
+  const [studentFeedback, setStudentFeedback] = useState(null);
+
+  // Student Enroll Modal state
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [candidateStudents, setCandidateStudents] = useState([]);
+  const [candidateLoading, setCandidateLoading] = useState(false);
+  const [enrollingId, setEnrollingId] = useState(null);
+
+  // Student Delete Modal state
+  const [deleteStudentModal, setDeleteStudentModal] = useState(null);
+  const [deleteStudentSubmitting, setDeleteStudentSubmitting] = useState(false);
+
+  // Status toggle
+  const [statusTogglingId, setStatusTogglingId] = useState(null);
+
+  // ── CO Attainment State ───────────────────────────────────────────────
+  const [attainmentData, setAttainmentData] = useState(null);
+  const [attainmentLoading, setAttainmentLoading] = useState(true);
+  const [attainmentError, setAttainmentError] = useState('');
+  const [targetThreshold, setTargetThreshold] = useState(40);
+  const [selectedCOBreakdown, setSelectedCOBreakdown] = useState(null);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
   // ── Fetch Course Details ──────────────────────────────────────────────
   useEffect(() => {
@@ -131,10 +166,49 @@ export default function CourseDetailPage() {
     }
   };
 
+  // ── Fetch Enrolled Students ───────────────────────────────────────────
+  const fetchStudents = async () => {
+    setStudentsLoading(true);
+    setStudentsError('');
+    try {
+      const response = await api.get(`/api/courses/${courseId}/students`);
+      setStudents(response.data.data);
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        'Failed to load enrolled students.';
+      setStudentsError(message);
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  // ── Fetch CO Attainment ───────────────────────────────────────────────
+  const fetchAttainment = async (targetVal) => {
+    setAttainmentLoading(true);
+    setAttainmentError('');
+    try {
+      const effectiveTarget = targetVal !== undefined ? targetVal : targetThreshold;
+      const response = await api.get(`/api/courses/${courseId}/attainment?target=${effectiveTarget}`);
+      setAttainmentData(response.data.data);
+      if (response.data.data.targetPercentage) {
+        setTargetThreshold(response.data.data.targetPercentage);
+      }
+    } catch (err) {
+      const message =
+        err.response?.data?.message || 'Failed to calculate CO attainment.';
+      setAttainmentError(message);
+    } finally {
+      setAttainmentLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (courseId) {
       fetchOutcomes();
       fetchAssessments();
+      fetchStudents();
+      fetchAttainment();
     }
   }, [courseId]);
 
@@ -152,6 +226,13 @@ export default function CourseDetailPage() {
       return () => clearTimeout(timer);
     }
   }, [assessmentFeedback]);
+
+  useEffect(() => {
+    if (studentFeedback) {
+      const timer = setTimeout(() => setStudentFeedback(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [studentFeedback]);
 
   // ── CO Modal Handlers ─────────────────────────────────────────────────
   const openAddModal = () => {
@@ -376,6 +457,143 @@ export default function CourseDetailPage() {
       setDeleteAssessmentSubmitting(false);
     }
   };
+
+  // ── Student Handlers ──────────────────────────────────────────────────
+  const searchCandidates = async (query) => {
+    setCandidateLoading(true);
+    try {
+      const response = await api.get(
+        `/api/courses/${courseId}/students/search${query ? `?q=${encodeURIComponent(query)}` : ''}`
+      );
+      setCandidateStudents(response.data.data || []);
+    } catch (err) {
+      console.error('Failed to search student candidates', err);
+    } finally {
+      setCandidateLoading(false);
+    }
+  };
+
+  const openEnrollModal = async () => {
+    setIsEnrollModalOpen(true);
+    setStudentSearchQuery('');
+    await searchCandidates('');
+  };
+
+  const closeEnrollModal = () => {
+    setIsEnrollModalOpen(false);
+    setStudentSearchQuery('');
+    setCandidateStudents([]);
+  };
+
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setStudentSearchQuery(query);
+    searchCandidates(query);
+  };
+
+  const handleEnrollStudent = async (studentId) => {
+    setEnrollingId(studentId);
+    try {
+      const response = await api.post(`/api/courses/${courseId}/students/${studentId}`);
+      setStudentFeedback({
+        type: 'success',
+        message: response.data.message || 'Student enrolled successfully.',
+      });
+      // Mark as enrolled in candidate search results
+      setCandidateStudents((prev) =>
+        prev.map((c) => (c._id === studentId ? { ...c, isEnrolled: true } : c))
+      );
+      // Refresh course enrolled students list
+      await fetchStudents();
+    } catch (err) {
+      const message =
+        err.response?.data?.message || 'Failed to enroll student. Please try again.';
+      setStudentFeedback({ type: 'error', message });
+    } finally {
+      setEnrollingId(null);
+    }
+  };
+
+  const handleToggleStudentStatus = async (enrollment) => {
+    const newStatus = enrollment.status === 'active' ? 'inactive' : 'active';
+    const studentId = enrollment.student?._id || enrollment.student;
+    setStatusTogglingId(enrollment._id);
+    try {
+      const response = await api.patch(
+        `/api/courses/${courseId}/students/${studentId}/status`,
+        { status: newStatus }
+      );
+      setStudentFeedback({
+        type: 'success',
+        message: response.data.message || `Student status updated to ${newStatus}.`,
+      });
+      await fetchStudents();
+    } catch (err) {
+      const message =
+        err.response?.data?.message || 'Failed to update student status.';
+      setStudentFeedback({ type: 'error', message });
+    } finally {
+      setStatusTogglingId(null);
+    }
+  };
+
+  const openDeleteStudentModal = (enrollment) => setDeleteStudentModal(enrollment);
+  const closeDeleteStudentModal = () => setDeleteStudentModal(null);
+
+  const handleDeleteStudentConfirm = async () => {
+    if (!deleteStudentModal) return;
+    setDeleteStudentSubmitting(true);
+    try {
+      const studentId = deleteStudentModal.student?._id || deleteStudentModal.student;
+      const response = await api.delete(
+        `/api/courses/${courseId}/students/${studentId}`
+      );
+      setStudentFeedback({
+        type: 'success',
+        message: response.data.message || 'Student removed from course successfully.',
+      });
+      closeDeleteStudentModal();
+      await fetchStudents();
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        'Failed to remove student from course. Please try again.';
+      setStudentFeedback({ type: 'error', message });
+      closeDeleteStudentModal();
+    } finally {
+      setDeleteStudentSubmitting(false);
+    }
+  };
+
+  // ── Attainment Handlers ───────────────────────────────────────────────
+  const handleTargetChange = (newTarget) => {
+    const val = Number(newTarget);
+    setTargetThreshold(val);
+    fetchAttainment(val);
+  };
+
+  const handleSaveDefaultTarget = async () => {
+    setIsUpdatingSettings(true);
+    try {
+      await api.patch(`/api/courses/${courseId}/attainment/settings`, {
+        targetPercentage: targetThreshold,
+      });
+      setFeedback({
+        type: 'success',
+        message: `Default benchmark target updated to ${targetThreshold}%.`,
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: 'Failed to update benchmark settings.',
+      });
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  const openCOBreakdown = (co) => setSelectedCOBreakdown(co);
+  const closeCOBreakdown = () => setSelectedCOBreakdown(null);
 
   const backButton = (
     <button
@@ -759,6 +977,14 @@ export default function CourseDetailPage() {
 
                     <div className="flex items-center gap-1">
                       <button
+                        onClick={() => navigate(`/courses/${courseId}/assessments/${a._id}`)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs text-primary-600 hover:text-primary-700 hover:bg-primary-50 font-semibold transition-colors cursor-pointer"
+                        title="View Questions"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Questions
+                      </button>
+                      <button
                         onClick={() => openEditAssessmentModal(a)}
                         className="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                         title="Edit Assessment"
@@ -781,36 +1007,492 @@ export default function CourseDetailPage() {
         </div>
       </Card>
 
-      {/* ── 4. Conceptual Future Sections ────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* CO-PO Mapping Placeholder */}
-        <Card>
-          <div className="flex items-center gap-2 mb-2">
-            <Network className="w-5 h-5 text-slate-400" />
-            <h3 className="text-sm font-bold text-slate-700">CO-PO Mapping</h3>
+      {/* ── 4. Enrolled Students Section ──────────────────────────────── */}
+      {studentFeedback && (
+        <div
+          className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+            studentFeedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}
+        >
+          <div className="flex items-center gap-2 text-sm font-medium">
+            {studentFeedback.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{studentFeedback.message}</span>
           </div>
-          <p className="text-xs text-slate-500 mb-4">
-            Map course outcomes to program outcomes with 1-3 correlation levels.
-          </p>
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">
-            Coming Soon
-          </span>
-        </Card>
+          <button
+            onClick={() => setStudentFeedback(null)}
+            className="text-slate-400 hover:text-slate-600 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-        {/* Attainment Placeholder */}
-        <Card>
-          <div className="flex items-center gap-2 mb-2">
-            <FileBarChart className="w-5 h-5 text-slate-400" />
-            <h3 className="text-sm font-bold text-slate-700">CO Attainment</h3>
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-800">
+                Enrolled Students
+              </h2>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                {students.length}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Manage students enrolled in this course for marks entry, evaluation, and outcome attainment.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mb-4">
-            Calculate outcome achievement percentages and generate compliance reports.
-          </p>
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">
-            Coming Soon
-          </span>
-        </Card>
-      </div>
+
+          <button
+            onClick={openEnrollModal}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm cursor-pointer shrink-0"
+          >
+            <UserPlus className="w-4 h-4" />
+            Enroll Student
+          </button>
+        </div>
+
+        <div className="pt-4">
+          {studentsLoading ? (
+            <div className="space-y-3 py-4">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="p-4 rounded-xl border border-surface-border bg-slate-50/50 animate-pulse flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-200" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-32" />
+                      <div className="h-3 bg-slate-200 rounded w-48" />
+                    </div>
+                  </div>
+                  <div className="h-4 bg-slate-200 rounded w-20" />
+                </div>
+              ))}
+            </div>
+          ) : studentsError ? (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{studentsError}</span>
+            </div>
+          ) : students.length === 0 ? (
+            <div className="py-8">
+              <EmptyState
+                icon={Users}
+                title="No students enrolled yet"
+                message="Enroll registered students in this course to evaluate assessments, input marks, and track CO attainment."
+                action={
+                  <button
+                    onClick={openEnrollModal}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 text-sm font-medium hover:bg-primary-100 transition-colors cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Enroll First Student
+                  </button>
+                }
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-surface-border">
+                  <tr>
+                    <th className="px-4 py-3">Student</th>
+                    <th className="px-4 py-3">Department</th>
+                    <th className="px-4 py-3">Enrolled Date</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-border">
+                  {students.map((e) => {
+                    const studentUser = e.student || {};
+                    const initials = (studentUser.name || 'S')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+
+                    return (
+                      <tr key={e._id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs shrink-0">
+                              {initials}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800">
+                                {studentUser.name || 'Unknown Student'}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {studentUser.email || '—'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-600">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                            {studentUser.department || 'General'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-500 text-xs">
+                          {e.enrollmentDate
+                            ? new Date(e.enrollmentDate).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <button
+                            onClick={() => handleToggleStudentStatus(e)}
+                            disabled={statusTogglingId === e._id}
+                            title="Click to toggle status"
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-opacity ${
+                              e.status === 'active'
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            } ${statusTogglingId === e._id ? 'opacity-50' : ''}`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                e.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'
+                              }`}
+                            />
+                            {e.status === 'active' ? 'Active' : 'Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <button
+                            onClick={() => openDeleteStudentModal(e)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Remove Student from Course"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* ── 5. Course Outcome (CO) Attainment Section ────────────────── */}
+      <Card>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-surface-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary-50 text-primary-700">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">
+                Course Outcome (CO) Attainment
+              </h2>
+              {attainmentData?.courseAttainmentStatus && (
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    attainmentData.courseAttainmentStatus === 'Attained'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : attainmentData.courseAttainmentStatus === 'Not Attained'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {attainmentData.courseAttainmentStatus}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Direct OBE attainment calculated from student marks across all assessment questions mapped to each Course Outcome.
+            </p>
+          </div>
+
+          {/* Benchmark Target Threshold Selector */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0 bg-slate-50 p-2 rounded-xl border border-surface-border">
+            <span className="text-xs font-semibold text-slate-600">
+              Benchmark Target:
+            </span>
+            <div className="flex items-center gap-1">
+              {[35, 40, 50, 60, 70].map((pct) => (
+                <button
+                  key={pct}
+                  onClick={() => handleTargetChange(pct)}
+                  className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                    targetThreshold === pct
+                      ? 'bg-primary-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-white hover:text-slate-800'
+                  }`}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleSaveDefaultTarget}
+              disabled={isUpdatingSettings}
+              className="ml-1 text-[11px] text-primary-600 hover:text-primary-800 font-medium underline cursor-pointer disabled:opacity-50"
+              title="Save selected target as default course setting"
+            >
+              {isUpdatingSettings ? 'Saving...' : 'Set Default'}
+            </button>
+          </div>
+        </div>
+
+        <div className="pt-5 space-y-6">
+          {attainmentLoading ? (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl border border-surface-border bg-slate-50/50 animate-pulse space-y-2"
+                  >
+                    <div className="h-3 bg-slate-200 rounded w-20" />
+                    <div className="h-6 bg-slate-200 rounded w-16" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {[...Array(2)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl border border-surface-border bg-slate-50/50 animate-pulse space-y-3"
+                  >
+                    <div className="h-4 bg-slate-200 rounded w-24" />
+                    <div className="h-3 bg-slate-200 rounded w-3/4" />
+                    <div className="h-2 bg-slate-200 rounded w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : attainmentError ? (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{attainmentError}</span>
+            </div>
+          ) : !attainmentData || attainmentData.outcomes.length === 0 ? (
+            <div className="py-8">
+              <EmptyState
+                icon={Target}
+                title="No Course Outcomes to calculate"
+                message="Define Course Outcomes and map assessment questions to calculate attainment percentages."
+              />
+            </div>
+          ) : (
+            <>
+              {/* Analytics Summary Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Overall Course Attainment */}
+                <div className="p-4 rounded-xl border border-surface-border bg-white shadow-xs space-y-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    Average CO Attainment
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-slate-800">
+                      {attainmentData.averageAttainment !== null
+                        ? `${attainmentData.averageAttainment}%`
+                        : '—'}
+                    </span>
+                    {attainmentData.averageAttainment !== null && (
+                      <span
+                        className={`text-xs font-semibold ${
+                          attainmentData.averageAttainment >= targetThreshold
+                            ? 'text-emerald-600'
+                            : 'text-rose-600'
+                        }`}
+                      >
+                        {attainmentData.averageAttainment >= targetThreshold
+                          ? '✓ Target Met'
+                          : '✗ Below Target'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                        attainmentData.averageAttainment >= targetThreshold
+                          ? 'bg-emerald-500'
+                          : 'bg-rose-500'
+                      }`}
+                      style={{
+                        width: `${Math.min(attainmentData.averageAttainment || 0, 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Attained COs Count */}
+                <div className="p-4 rounded-xl border border-surface-border bg-white shadow-xs space-y-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    Outcomes Attained
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-slate-800">
+                      {attainmentData.attainedOutcomesCount}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      / {attainmentData.evaluatedOutcomesCount} evaluated ({attainmentData.totalCourseOutcomes} total)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    COs with attainment score ≥ {targetThreshold}%
+                  </p>
+                </div>
+
+                {/* 3. Students Evaluated */}
+                <div className="p-4 rounded-xl border border-surface-border bg-white shadow-xs space-y-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    Total Enrolled Students
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-slate-800">
+                      {attainmentData.totalEnrolledStudents}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      enrolled
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Active students evaluated on assessments
+                  </p>
+                </div>
+
+                {/* 4. Benchmark Target */}
+                <div className="p-4 rounded-xl border border-surface-border bg-white shadow-xs space-y-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    Target Benchmark
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-primary-600">
+                      {targetThreshold}%
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      score threshold
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Minimum score required to attain a CO
+                  </p>
+                </div>
+              </div>
+
+              {/* CO Attainment Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {attainmentData.outcomes.map((co) => {
+                  const isAttained = co.status === 'Attained';
+                  const hasData = co.attainmentPercentage !== null;
+
+                  return (
+                    <div
+                      key={co.coId}
+                      className={`p-4 rounded-xl border transition-all ${
+                        !hasData
+                          ? 'border-slate-200 bg-slate-50/50'
+                          : isAttained
+                          ? 'border-emerald-200 bg-gradient-to-br from-emerald-50/20 to-white'
+                          : 'border-rose-200 bg-gradient-to-br from-rose-50/20 to-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary-100 text-primary-800 text-xs font-bold tracking-wider">
+                            {co.code}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              !hasData
+                                ? 'bg-slate-100 text-slate-500'
+                                : isAttained
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-rose-50 text-rose-700'
+                            }`}
+                          >
+                            {co.status}
+                          </span>
+                        </div>
+
+                        {/* Attainment Percentage Pill */}
+                        <span className="text-lg font-black text-slate-800">
+                          {hasData ? `${co.attainmentPercentage}%` : '—'}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">
+                        {co.description}
+                      </p>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-3">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500 ${
+                            !hasData
+                              ? 'bg-slate-300'
+                              : isAttained
+                              ? 'bg-emerald-500'
+                              : 'bg-rose-500'
+                          }`}
+                          style={{
+                            width: `${Math.min(co.attainmentPercentage || 0, 100)}%`,
+                          }}
+                        />
+                      </div>
+
+                      {/* Details & Actions Footer */}
+                      <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-surface-border">
+                        <div className="space-x-2">
+                          <span>
+                            <strong>{co.mappedQuestionsCount}</strong> Qs ({co.maxMarks}M)
+                          </span>
+                          <span>•</span>
+                          <span>
+                            <strong>{co.studentsAttained}</strong>/{co.studentsConsidered} attained
+                          </span>
+                        </div>
+
+                        {co.studentsBreakdown && co.studentsBreakdown.length > 0 && (
+                          <button
+                            onClick={() => openCOBreakdown(co)}
+                            className="text-xs font-semibold text-primary-600 hover:text-primary-800 hover:underline cursor-pointer"
+                          >
+                            View Students
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </Card>
+
+      {/* ── 6. Conceptual Future Section: CO-PO Mapping ─────────────── */}
+      <Card>
+        <div className="flex items-center gap-2 mb-2">
+          <Network className="w-5 h-5 text-slate-400" />
+          <h3 className="text-sm font-bold text-slate-700">CO-PO Mapping</h3>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">
+          Map course outcomes to program outcomes with 1-3 correlation levels for institutional accreditation and attainment compliance.
+        </p>
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500">
+          Coming Soon
+        </span>
+      </Card>
 
       {/* ── CO Modal Dialog ─────────────────────────────────────────── */}
       {isModalOpen && (
@@ -1119,6 +1801,266 @@ export default function CourseDetailPage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {deleteAssessmentSubmitting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Enroll Student Modal Dialog ─────────────────────────────── */}
+      {isEnrollModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-xl border border-surface-border max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-surface-border">
+              <div>
+                <h3 className="text-base font-bold text-slate-800">
+                  Enroll Students
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Find and enroll registered students in this course.
+                </p>
+              </div>
+              <button onClick={closeEnrollModal} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by student name or email..."
+                value={studentSearchQuery}
+                onChange={handleSearchInputChange}
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                autoFocus
+              />
+            </div>
+
+            {/* Candidate List */}
+            <div className="max-h-72 overflow-y-auto divide-y divide-surface-border border border-surface-border rounded-xl">
+              {candidateLoading ? (
+                <div className="p-4 space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="h-4 bg-slate-200 rounded w-28" />
+                        <div className="h-3 bg-slate-100 rounded w-40" />
+                      </div>
+                      <div className="h-7 bg-slate-200 rounded w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : candidateStudents.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-xs">
+                  <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-medium text-slate-700">No students found</p>
+                  <p className="mt-1">
+                    {studentSearchQuery ? 'Try adjusting your search keywords.' : 'No student accounts are registered yet.'}
+                  </p>
+                </div>
+              ) : (
+                candidateStudents.map((candidate) => {
+                  const initials = (candidate.name || 'S')
+                    .split(' ')
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
+
+                  return (
+                    <div
+                      key={candidate._id}
+                      className="p-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 pr-3">
+                        <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs shrink-0">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">
+                            {candidate.name}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {candidate.email}
+                            {candidate.department ? ` • ${candidate.department}` : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {candidate.isEnrolled ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Enrolled
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleEnrollStudent(candidate._id)}
+                            disabled={enrollingId === candidate._id}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Plus className="w-3 h-3" />
+                            {enrollingId === candidate._id ? 'Enrolling...' : 'Enroll'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={closeEnrollModal}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Remove Student Confirmation Modal ────────────────────────── */}
+      {deleteStudentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-xl border border-surface-border max-w-sm w-full p-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Remove Student</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Are you sure you want to remove{' '}
+                <span className="font-semibold text-slate-700">
+                  {deleteStudentModal.student?.name || 'this student'}
+                </span>{' '}
+                from this course?
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeDeleteStudentModal}
+                disabled={deleteStudentSubmitting}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteStudentConfirm}
+                disabled={deleteStudentSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {deleteStudentSubmitting ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Student CO Breakdown Modal ─────────────────────────────── */}
+      {selectedCOBreakdown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-xl border border-surface-border max-w-2xl w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-surface-border">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-primary-100 text-primary-800 text-xs font-bold">
+                    {selectedCOBreakdown.code}
+                  </span>
+                  <h3 className="text-base font-bold text-slate-800">
+                    Student Attainment Breakdown
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                  {selectedCOBreakdown.description}
+                </p>
+              </div>
+              <button
+                onClick={closeCOBreakdown}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-xl border border-surface-border">
+              <div>
+                <span className="text-slate-500">Benchmark Target: </span>
+                <span className="font-bold text-slate-800">{targetThreshold}%</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Total Max Marks: </span>
+                <span className="font-bold text-slate-800">{selectedCOBreakdown.maxMarks} Marks</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Attainment: </span>
+                <span className="font-bold text-emerald-600">
+                  {selectedCOBreakdown.studentsAttained} / {selectedCOBreakdown.studentsConsidered} ({selectedCOBreakdown.attainmentPercentage}%)
+                </span>
+              </div>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto border border-surface-border rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-surface-border sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2.5">Student</th>
+                    <th className="px-3 py-2.5 text-center">Score / Max</th>
+                    <th className="px-3 py-2.5 text-center">Percentage</th>
+                    <th className="px-3 py-2.5 text-right">Attained</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-border">
+                  {selectedCOBreakdown.studentsBreakdown.map((s) => (
+                    <tr key={s.studentId} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-3 py-2">
+                        <p className="font-semibold text-slate-800">{s.name}</p>
+                        <p className="text-[11px] text-slate-400">{s.email}</p>
+                      </td>
+                      <td className="px-3 py-2 text-center font-medium text-slate-700">
+                        {s.marksObtained} / {s.maxMarks}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span
+                          className={`font-bold ${
+                            s.studentPercentage >= targetThreshold
+                              ? 'text-emerald-600'
+                              : 'text-rose-600'
+                          }`}
+                        >
+                          {s.studentPercentage}%
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            s.isAttained
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-rose-50 text-rose-700'
+                          }`}
+                        >
+                          {s.isAttained ? '✓ Yes' : '✗ No'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={closeCOBreakdown}
+                className="px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

@@ -17,9 +17,13 @@ router.route('/')
     .get(getCourseAssessments)
     .post(createAssessment);
 
+const { getAssessmentAttainment } = require('../controllers/attainmentController');
+
 router.route('/:assessmentId')
     .get(getAssessmentById)
     .put(updateAssessment)
     .delete(deleteAssessment);
+
+router.get('/:assessmentId/attainment', getAssessmentAttainment);
 
 module.exports = router;

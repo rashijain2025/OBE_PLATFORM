@@ -23,8 +23,8 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: {
-            values: ['admin', 'coordinator', 'faculty'],
-            message: '{VALUE} is not a valid role. Allowed roles are: admin, coordinator, faculty'
+            values: ['admin', 'coordinator', 'faculty', 'student'],
+            message: '{VALUE} is not a valid role. Allowed roles are: admin, coordinator, faculty, student'
         },
         default: 'faculty'
     },

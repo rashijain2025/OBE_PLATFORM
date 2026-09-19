@@ -9,6 +9,8 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const facultyAssessmentRoutes = require('./routes/facultyAssessmentRoutes');
+const questionRoutes = require('./routes/questionRoutes');
+const markRoutes = require('./routes/markRoutes');
 
 // Initialize Express app
 const app = express();
@@ -31,13 +33,18 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('combined'));
 }
 
-// --- Routes ---
+const { protect } = require('./middleware/authMiddleware');
+const { getAssessmentAttainment } = require('./controllers/attainmentController');
+
 // Health Check Route
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/assessments', facultyAssessmentRoutes);
+app.use('/api/assessments/:assessmentId/questions', questionRoutes);
+app.use('/api/assessments/:assessmentId/marks', markRoutes);
+app.get('/api/assessments/:assessmentId/attainment', protect, getAssessmentAttainment);
 
 // --- Error Handling ---
 // 404 Not Found

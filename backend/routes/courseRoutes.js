@@ -12,9 +12,15 @@ router.get('/:courseId', protect, getCourseById);
 
 const outcomeRoutes = require('./outcomeRoutes');
 const assessmentRoutes = require('./assessmentRoutes');
+const enrollmentRoutes = require('./enrollmentRoutes');
+const attainmentRoutes = require('./attainmentRoutes');
+const reportRoutes = require('./reportRoutes');
 
 // Re-route into other resource routers
 router.use('/:courseId/outcomes', outcomeRoutes);
 router.use('/:courseId/assessments', assessmentRoutes);
+router.use('/:courseId/students', enrollmentRoutes);
+router.use('/:courseId/attainment', attainmentRoutes);
+router.use('/:courseId/report', reportRoutes);
 
 module.exports = router;

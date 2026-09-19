@@ -6,6 +6,7 @@ import RegisterPage from '../pages/auth/RegisterPage';
 import Dashboard from '../pages/Dashboard';
 import CoursesPage from '../pages/CoursesPage';
 import CourseDetailPage from '../pages/CourseDetailPage';
+import AssessmentDetailPage from '../pages/AssessmentDetailPage';
 import AssessmentsPage from '../pages/AssessmentsPage';
 import AttainmentPage from '../pages/AttainmentPage';
 import ReportsPage from '../pages/ReportsPage';
@@ -35,6 +36,7 @@ export default function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+        <Route path="/courses/:courseId/assessments/:assessmentId" element={<AssessmentDetailPage />} />
         <Route path="/assessments" element={<AssessmentsPage />} />
         <Route path="/attainment" element={<AttainmentPage />} />
         <Route path="/reports" element={<ReportsPage />} />
