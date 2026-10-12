@@ -1,79 +1,50 @@
 const mongoose = require('mongoose');
 
-const courseSchema = new mongoose.Schema({
-    courseCode: {
-        type: String,
-        required: [true, 'Course code is required'],
-        trim: true,
-        uppercase: true,
+const courseSchema = new mongoose.Schema(
+  {
+    code: {
+      type: String,
+      required: [true, 'Course code is required'],
+      uppercase: true,
+      trim: true,
     },
-    courseName: {
-        type: String,
-        required: [true, 'Course name is required'],
-        trim: true,
-    },
-    department: {
-        type: String,
-        required: [true, 'Department is required'],
-        trim: true,
+    name: {
+      type: String,
+      required: [true, 'Course name is required'],
+      trim: true,
     },
     semester: {
-        type: Number,
-        required: [true, 'Semester is required'],
-        min: [1, 'Semester must be at least 1'],
-        max: [8, 'Semester cannot exceed 8'],
+      type: Number,
+      required: [true, 'Semester is required'],
+      min: 1,
+      max: 12,
     },
-    credits: {
-        type: Number,
-        required: [true, 'Credits are required'],
-        min: [1, 'Credits must be at least 1'],
-        max: [6, 'Credits cannot exceed 6'],
+    programme: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Programme',
+      required: [true, 'Programme is required'],
+    },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Faculty is required'],
     },
     academicYear: {
-        type: String,
-        required: [true, 'Academic year is required'],
-        trim: true,
-        // e.g., "2025-26"
+      type: String,
+      required: [true, 'Academic year is required (e.g. 2025-2026)'],
+      trim: true,
     },
-    assignedFaculty: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Assigned faculty is required'],
+    credits: {
+      type: Number,
+      default: 3,
     },
-    description: {
-        type: String,
-        trim: true,
-        default: '',
-    },
-    isActive: {
-        type: Boolean,
-        default: true,
-    },
-    attainmentSettings: {
-        targetPercentage: {
-            type: Number,
-            default: 40,
-            min: [1, 'Target percentage must be at least 1%'],
-            max: [100, 'Target percentage cannot exceed 100%'],
-        },
-        minStudentsRequired: {
-            type: Number,
-            default: 1,
-            min: [1, 'Minimum students required must be at least 1'],
-        },
-    },
-}, {
+  },
+  {
     timestamps: true,
-});
+  }
+);
 
-// ── Indexes ────────────────────────────────────────────────────────────
-// Compound unique: same course code cannot exist twice in the same academic year
-courseSchema.index({ courseCode: 1, academicYear: 1 }, { unique: true });
-
-// Faculty lookup — used by GET /api/courses/my-courses
-courseSchema.index({ assignedFaculty: 1 });
-
-// Department queries
-courseSchema.index({ department: 1 });
+courseSchema.index({ code: 1, academicYear: 1, programme: 1 }, { unique: true });
+courseSchema.index({ faculty: 1 });
 
 module.exports = mongoose.model('Course', courseSchema);

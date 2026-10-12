@@ -1,10 +1,14 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
-const { getFacultyDashboard } = require('../controllers/dashboardController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const dashboardController = require('../controllers/dashboardController');
 
 const router = express.Router();
 
-// GET /api/dashboard/faculty — Protected
-router.get('/faculty', protect, getFacultyDashboard);
+/**
+ * @route   GET /api/dashboard
+ * @desc    Get real counts per role
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/', protect, authorize('admin', 'coordinator', 'faculty'), (req, res, next) => dashboardController.getStats(req, res, next));
 
 module.exports = router;

@@ -1,29 +1,43 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
-const {
-    getCourseAssessments,
-    getAssessmentById,
-    createAssessment,
-    updateAssessment,
-    deleteAssessment,
-} = require('../controllers/assessmentController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const assessmentController = require('../controllers/assessmentController');
 
-// mergeParams: true allows access to :courseId from parent router
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
 router.use(protect);
 
-router.route('/')
-    .get(getCourseAssessments)
-    .post(createAssessment);
+/**
+ * @route   GET /api/assessments?courseId=...
+ * @desc    List assessments for a course
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => assessmentController.list(req, res, next));
 
-const { getAssessmentAttainment } = require('../controllers/attainmentController');
+/**
+ * @route   GET /api/assessments/:id
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => assessmentController.getOne(req, res, next));
 
-router.route('/:assessmentId')
-    .get(getAssessmentById)
-    .put(updateAssessment)
-    .delete(deleteAssessment);
+/**
+ * @route   POST /api/assessments
+ * @desc    Create an assessment
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.post('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => assessmentController.create(req, res, next));
 
-router.get('/:assessmentId/attainment', getAssessmentAttainment);
+/**
+ * @route   PUT /api/assessments/:id
+ * @desc    Update an assessment
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.put('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => assessmentController.update(req, res, next));
+
+/**
+ * @route   DELETE /api/assessments/:id
+ * @desc    Delete an assessment
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.delete('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => assessmentController.remove(req, res, next));
 
 module.exports = router;

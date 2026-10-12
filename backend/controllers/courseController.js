@@ -1,69 +1,69 @@
-const Course = require('../models/Course');
+const courseService = require('../services/courseService');
 
-/**
- * Course Controller
- * ─────────────────
- * Handles course-related API requests.
- * Currently implements faculty course listing and single course retrieval.
- */
-
-/**
- * @desc    Get courses assigned to the logged-in faculty
- * @route   GET /api/courses/my-courses
- * @access  Private (requires authentication)
- */
-const getMyCourses = async (req, res, next) => {
+class CourseController {
+  async list(req, res, next) {
     try {
-        const facultyId = req.user._id;
+      const { programme, academicYear, semester } = req.query;
+      const courses = await courseService.listCourses({
+        role: req.user.role,
+        userId: req.user._id,
+        programme,
+        academicYear,
+        semester,
+      });
+      res.json({ success: true, data: courses, message: 'Courses retrieved successfully' });
+    } catch (err) { next(err); }
+  }
 
-        const courses = await Course.find({ assignedFaculty: facultyId })
-            .select('-__v')
-            .sort({ createdAt: -1 });
-
-        res.status(200).json({
-            success: true,
-            count: courses.length,
-            data: courses,
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-
-/**
- * @desc    Get a single course by ID (only if assigned to the logged-in faculty)
- * @route   GET /api/courses/:courseId
- * @access  Private (requires authentication)
- */
-const getCourseById = async (req, res, next) => {
+  async getOne(req, res, next) {
     try {
-        const facultyId = req.user._id;
-        const { courseId } = req.params;
+      const course = await courseService.getCourseById(req.params.id, {
+        role: req.user.role,
+        userId: req.user._id,
+      });
+      res.json({ success: true, data: course, message: 'Course retrieved successfully' });
+    } catch (err) { next(err); }
+  }
 
-        const course = await Course.findOne({
-            _id: courseId,
-            assignedFaculty: facultyId,
-        })
-            .select('-__v')
-            .populate('assignedFaculty', 'name email department');
+  async getDetails(req, res, next) {
+    try {
+      const details = await courseService.getCourseDetails(req.params.id, {
+        role: req.user.role,
+        userId: req.user._id,
+      });
+      res.json({ success: true, data: details, message: 'Course details retrieved successfully' });
+    } catch (err) { next(err); }
+  }
 
-        if (!course) {
-            res.status(404);
-            return next(new Error('Course not found or not assigned to you.'));
-        }
-
-        res.status(200).json({
-            success: true,
-            data: course,
+  async create(req, res, next) {
+    try {
+      const { code, name, semester, programme, faculty, academicYear, credits } = req.body;
+      if (!code || !name || !semester || !programme || !faculty || !academicYear) {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: 'code, name, semester, programme, faculty and academicYear are required',
         });
-    } catch (err) {
-        // Handle invalid ObjectId format
-        if (err.name === 'CastError' && err.kind === 'ObjectId') {
-            res.status(404);
-            return next(new Error('Course not found — invalid course ID.'));
-        }
-        next(err);
-    }
-};
+      }
+      const course = await courseService.createCourse({ code, name, semester, programme, faculty, academicYear, credits });
+      res.status(201).json({ success: true, data: course, message: 'Course created successfully' });
+    } catch (err) { next(err); }
+  }
 
-module.exports = { getMyCourses, getCourseById };
+  async update(req, res, next) {
+    try {
+      const { code, name, semester, programme, faculty, academicYear, credits } = req.body;
+      const course = await courseService.updateCourse(req.params.id, { code, name, semester, programme, faculty, academicYear, credits });
+      res.json({ success: true, data: course, message: 'Course updated successfully' });
+    } catch (err) { next(err); }
+  }
+
+  async remove(req, res, next) {
+    try {
+      const result = await courseService.deleteCourse(req.params.id);
+      res.json({ success: true, data: result, message: 'Course deleted successfully' });
+    } catch (err) { next(err); }
+  }
+}
+
+module.exports = new CourseController();

@@ -1,24 +1,43 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
-const {
-    getQuestions,
-    createQuestion,
-    updateQuestion,
-    deleteQuestion,
-} = require('../controllers/questionController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const questionController = require('../controllers/questionController');
 
-// mergeParams: true allows access to :assessmentId from parent router
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
-// All question routes are JWT-protected
 router.use(protect);
 
-router.route('/')
-    .get(getQuestions)
-    .post(createQuestion);
+/**
+ * @route   GET /api/questions?assessmentId=...
+ * @desc    List questions for an assessment
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.list(req, res, next));
 
-router.route('/:questionId')
-    .put(updateQuestion)
-    .delete(deleteQuestion);
+/**
+ * @route   GET /api/questions/:id
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.getOne(req, res, next));
+
+/**
+ * @route   POST /api/questions
+ * @desc    Create question with Question→CO mapping
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.post('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.create(req, res, next));
+
+/**
+ * @route   PUT /api/questions/:id
+ * @desc    Update question
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.put('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.update(req, res, next));
+
+/**
+ * @route   DELETE /api/questions/:id
+ * @desc    Delete question
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.delete('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.remove(req, res, next));
 
 module.exports = router;

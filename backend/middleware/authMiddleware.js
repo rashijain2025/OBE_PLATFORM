@@ -1,62 +1,87 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { verifyToken } = require('../utils/jwt');
+const { User } = require('../models');
 
 /**
- * @desc    Protect routes — verify JWT and attach user to request
- * @usage   router.get('/protected', protect, handler)
- *
- * Expects header:  Authorization: Bearer <token>
- * On success:      req.user = User document (without password)
- * On failure:      401 Unauthorized
+ * Middleware to protect routes and verify JWT authentication
  */
 const protect = async (req, res, next) => {
-    try {
-        let token;
+  let token;
 
-        // ── 1. Extract token from Authorization header ──────────────────
-        if (
-            req.headers.authorization &&
-            req.headers.authorization.startsWith('Bearer')
-        ) {
-            token = req.headers.authorization.split(' ')[1];
-        }
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer ')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-        if (!token) {
-            res.status(401);
-            return next(new Error('Not authorized — no token provided.'));
-        }
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      data: null,
+      message: 'Access denied: No token provided. Please log in.',
+    });
+  }
 
-        // ── 2. Verify token ────────────────────────────────────────────
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  try {
+    const decoded = verifyToken(token);
+    const user = await User.findById(decoded.id).select('-passwordHash');
 
-        // ── 3. Fetch user from DB (exclude password) ───────────────────
-        const user = await User.findById(decoded.id);
-
-        if (!user) {
-            res.status(401);
-            return next(new Error('Not authorized — user no longer exists.'));
-        }
-
-        if (!user.isActive) {
-            res.status(403);
-            return next(new Error('Your account has been deactivated. Please contact the administrator.'));
-        }
-
-        // ── 4. Attach user to request ──────────────────────────────────
-        req.user = user;
-        next();
-    } catch (err) {
-        // JWT errors: TokenExpiredError, JsonWebTokenError, NotBeforeError
-        if (err.name === 'TokenExpiredError') {
-            res.status(401);
-            return next(new Error('Not authorized — token has expired.'));
-        }
-        if (err.name === 'JsonWebTokenError') {
-            res.status(401);
-            return next(new Error('Not authorized — invalid token.'));
-        }
-        next(err);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        data: null,
+        message: 'Invalid session: User no longer exists.',
+      });
     }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        data: null,
+        message: 'Account is deactivated. Please contact support.',
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      data: null,
+      message: error.name === 'TokenExpiredError'
+        ? 'Session expired. Please log in again.'
+        : 'Invalid token. Authentication failed.',
+    });
+  }
 };
 
-module.exports = { protect };
+/**
+ * Middleware to restrict access to specific roles
+ * @param  {...string} roles - Permitted user roles
+ */
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        data: null,
+        message: 'Authentication required.',
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        data: null,
+        message: `Forbidden: User role '${req.user.role}' is not authorized to access this resource.`,
+      });
+    }
+
+    next();
+  };
+};
+
+module.exports = {
+  protect,
+  authorize,
+};

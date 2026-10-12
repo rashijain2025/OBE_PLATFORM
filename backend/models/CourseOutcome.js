@@ -1,47 +1,46 @@
 const mongoose = require('mongoose');
 
-/**
- * CourseOutcome Schema
- * ─────────────────────
- * Represents a specific Course Outcome (CO) for an academic course.
- * Each CO belongs to exactly one Course and has a unique code within that course.
- */
-const courseOutcomeSchema = new mongoose.Schema({
+const courseOutcomeSchema = new mongoose.Schema(
+  {
     course: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Course',
-        required: [true, 'Course is required'],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: [true, 'Course reference is required'],
     },
     code: {
-        type: String,
-        required: [true, 'Course Outcome code is required (e.g. CO1)'],
-        trim: true,
-        uppercase: true,
+      type: String,
+      required: [true, 'CO code is required (e.g. CO1)'],
+      trim: true,
+      uppercase: true,
     },
-    description: {
-        type: String,
-        required: [true, 'Course Outcome description is required'],
-        trim: true,
+    statement: {
+      type: String,
+      required: [true, 'CO statement is required'],
+      trim: true,
     },
-    order: {
-        type: Number,
-        required: [true, 'Order is required'],
-        min: [1, 'Order must be at least 1'],
-        default: 1,
+    targetMarksPercentage: {
+      type: Number,
+      default: 60,
+      min: 0,
+      max: 100,
     },
-    isActive: {
-        type: Boolean,
-        default: true,
+    targetAttainmentPercentage: {
+      type: Number,
+      default: 70,
+      min: 0,
+      max: 100,
     },
-}, {
+    bloomLevel: {
+      type: String,
+      enum: ['L1: Remember', 'L2: Understand', 'L3: Apply', 'L4: Analyze', 'L5: Evaluate', 'L6: Create'],
+      default: 'L3: Apply',
+    },
+  },
+  {
     timestamps: true,
-});
+  }
+);
 
-// ── Indexes ────────────────────────────────────────────────────────────
-// Compound unique index: Prevent duplicate CO codes within the same course (e.g., duplicate CO1 in CS301)
 courseOutcomeSchema.index({ course: 1, code: 1 }, { unique: true });
-
-// Query optimization for fetching and ordering COs within a course
-courseOutcomeSchema.index({ course: 1, order: 1 });
 
 module.exports = mongoose.model('CourseOutcome', courseOutcomeSchema);

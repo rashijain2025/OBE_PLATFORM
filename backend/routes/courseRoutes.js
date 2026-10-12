@@ -1,26 +1,54 @@
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware');
-const { getMyCourses, getCourseById } = require('../controllers/courseController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const courseController = require('../controllers/courseController');
 
 const router = express.Router();
 
-// GET /api/courses/my-courses — Get faculty's assigned courses
-router.get('/my-courses', protect, getMyCourses);
+router.use(protect);
 
-// GET /api/courses/:courseId — Get a single course by ID
-router.get('/:courseId', protect, getCourseById);
+/**
+ * @route   GET /api/courses
+ * @desc    List courses — scoped by role (faculty sees only their own)
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => courseController.list(req, res, next));
 
-const outcomeRoutes = require('./outcomeRoutes');
-const assessmentRoutes = require('./assessmentRoutes');
-const enrollmentRoutes = require('./enrollmentRoutes');
-const attainmentRoutes = require('./attainmentRoutes');
-const reportRoutes = require('./reportRoutes');
+/**
+ * @route   GET /api/courses/:id
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => courseController.getOne(req, res, next));
 
-// Re-route into other resource routers
-router.use('/:courseId/outcomes', outcomeRoutes);
-router.use('/:courseId/assessments', assessmentRoutes);
-router.use('/:courseId/students', enrollmentRoutes);
-router.use('/:courseId/attainment', attainmentRoutes);
-router.use('/:courseId/report', reportRoutes);
+/**
+ * @route   GET /api/courses/:id/details
+ * @access  Admin, Coordinator, Faculty
+ */
+router.get('/:id/details', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => courseController.getDetails(req, res, next));
+
+/**
+ * @route   GET /api/courses/:id/predictions
+ * @desc    Get ML early warning predictions for a course
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+const predictionController = require('../controllers/predictionController');
+router.get('/:id/predictions', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => predictionController.getCoursePredictions(req, res, next));
+
+/**
+ * @route   POST /api/courses
+ * @access  Admin, Coordinator
+ */
+router.post('/', authorize('admin', 'coordinator'), (req, res, next) => courseController.create(req, res, next));
+
+/**
+ * @route   PUT /api/courses/:id
+ * @access  Admin, Coordinator
+ */
+router.put('/:id', authorize('admin', 'coordinator'), (req, res, next) => courseController.update(req, res, next));
+
+/**
+ * @route   DELETE /api/courses/:id
+ * @access  Admin, Coordinator
+ */
+router.delete('/:id', authorize('admin', 'coordinator'), (req, res, next) => courseController.remove(req, res, next));
 
 module.exports = router;
