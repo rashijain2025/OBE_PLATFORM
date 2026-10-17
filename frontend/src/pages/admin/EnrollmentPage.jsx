@@ -36,13 +36,13 @@ export default function EnrollmentPage() {
 
   useEffect(() => {
     Promise.all([
-      listCoursesApi(),
-      listUsersApi({ role: 'student', limit: 500 }),
+      listCoursesApi().catch(() => ({ data: [] })),
+      listUsersApi({ role: 'student', limit: 500 }).catch(() => ({ data: { users: [] } })),
     ]).then(([cRes, uRes]) => {
-      setCourses(cRes.data);
-      setStudents(uRes.data.users);
+      setCourses(cRes.data || []);
+      setStudents(uRes.data?.users || []);
     }).catch(() => showToast('Failed to load data', 'error'));
-  }, []);
+  }, [showToast]);
 
   const fetchEnrollments = useCallback(async (courseId) => {
     if (!courseId) { setEnrollments([]); return; }

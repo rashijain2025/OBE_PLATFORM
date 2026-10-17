@@ -53,9 +53,13 @@ export default function AppLayout() {
         return [
           ...common,
           { to: '/courses', label: 'Courses', icon: BookOpen },
+          { to: '/departments', label: 'Departments & Progs', icon: Building2 },
           { to: '/outcomes', label: 'PEO / PO / PSO', icon: Award },
           { to: '/mappings', label: 'CO-PO Mapping', icon: Layers },
+          { to: '/marks', label: 'Marks Entry & Review', icon: FileSpreadsheet },
+          { to: '/attainment', label: 'CO Attainment', icon: Award },
           { to: '/programme-report', label: 'Programme Report', icon: BarChart3 },
+          { to: '/reports', label: 'Faculty Reports', icon: BarChart3 },
           { to: '/early-warning', label: 'Early Warning', icon: Sparkles },
           { to: '/enrollments', label: 'Enrollments', icon: UserCheck },
           { to: '/health', label: 'System Health', icon: Activity },

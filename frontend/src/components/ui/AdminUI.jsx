@@ -90,7 +90,7 @@ export function FormInput({ label, id, error, ...props }) {
   );
 }
 
-export function FormSelect({ label, id, error, children, ...props }) {
+export function FormSelect({ label, id, error, options, children, ...props }) {
   return (
     <div>
       {label && (
@@ -105,7 +105,13 @@ export function FormSelect({ label, id, error, children, ...props }) {
         }`}
         {...props}
       >
-        {children}
+        {options
+          ? options.map((opt) => (
+              <option key={opt.value} value={opt.value} className="bg-gray-800 text-gray-200">
+                {opt.label}
+              </option>
+            ))
+          : children}
       </select>
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>

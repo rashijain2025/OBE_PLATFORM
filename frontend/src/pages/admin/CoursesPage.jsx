@@ -100,16 +100,22 @@ export default function CoursesPage() {
     try {
       const [cRes, pRes, uRes] = await Promise.all([
         listCoursesApi(),
-        listProgrammesApi(),
-        listUsersApi({ role: 'faculty', limit: 100 }),
+        listProgrammesApi().catch((e) => {
+          console.warn('Could not load programmes list:', e);
+          return { data: [] };
+        }),
+        listUsersApi({ role: 'faculty', limit: 100 }).catch((e) => {
+          console.warn('Could not load faculty list:', e);
+          return { data: { users: [] } };
+        }),
       ]);
-      setCourses(cRes.data);
-      setProgrammes(pRes.data);
-      setFacultyList(uRes.data.users);
+      setCourses(cRes.data || []);
+      setProgrammes(pRes.data || []);
+      setFacultyList(uRes.data?.users || []);
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to load', 'error');
+      showToast(err.response?.data?.message || 'Failed to load courses', 'error');
     } finally { setLoading(false); }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

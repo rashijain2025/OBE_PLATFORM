@@ -124,19 +124,19 @@ export default function DepartmentsPage() {
     setLoading(true);
     try {
       const [dRes, pRes, uRes] = await Promise.all([
-        listDepartmentsApi(),
-        listProgrammesApi(),
-        listUsersApi({ role: 'coordinator', limit: 100 }),
+        listDepartmentsApi().catch(() => ({ data: [] })),
+        listProgrammesApi().catch(() => ({ data: [] })),
+        listUsersApi({ role: 'coordinator', limit: 100 }).catch(() => ({ data: { users: [] } })),
       ]);
-      setDepts(dRes.data);
-      setProgs(pRes.data);
-      setCoordinators(uRes.data.users);
+      setDepts(dRes.data || []);
+      setProgs(pRes.data || []);
+      setCoordinators(uRes.data?.users || []);
     } catch (err) {
       showToast('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

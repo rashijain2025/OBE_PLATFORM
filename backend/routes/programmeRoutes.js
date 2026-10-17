@@ -20,15 +20,15 @@ router.get('/:id', (req, res, next) => programmeController.getOne(req, res, next
 
 /**
  * @route   POST /api/programmes
- * @access  Admin
+ * @access  Admin, Coordinator
  */
-router.post('/', authorize('admin'), (req, res, next) => programmeController.create(req, res, next));
+router.post('/', authorize('admin', 'coordinator'), (req, res, next) => programmeController.create(req, res, next));
 
 /**
  * @route   PUT /api/programmes/:id
- * @access  Admin
+ * @access  Admin, Coordinator
  */
-router.put('/:id', authorize('admin'), (req, res, next) => programmeController.update(req, res, next));
+router.put('/:id', authorize('admin', 'coordinator'), (req, res, next) => programmeController.update(req, res, next));
 
 /**
  * @route   DELETE /api/programmes/:id

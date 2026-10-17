@@ -15,31 +15,34 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// Standard CORS middleware first so preflight and rate-limit responses always carry CORS headers
+app.use(cors());
+
 // Security middleware
 app.use(helmet());
 app.use(mongoSanitize());
 
-// Global rate limiter: 100 requests per 15 minutes per IP
+// Global rate limiter: 300 requests per 15 minutes per IP (skip CORS preflights)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: { success: false, data: null, message: 'Too many requests, please try again later.' },
 });
 app.use(globalLimiter);
 
-// Strict rate limiter for auth login: 10 attempts per 15 minutes per IP
+// Rate limiter for auth login (skip preflight OPTIONS; relaxed in non-production)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === 'production' ? 15 : 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: { success: false, data: null, message: 'Too many login attempts, please try again after 15 minutes.' },
 });
 
-// Standard middleware
-app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));

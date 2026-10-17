@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -51,6 +51,11 @@ export default function CourseDetailsPage() {
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [allStudents, setAllStudents] = useState([]);
 
+  const enrolledStudentIds = useMemo(
+    () => new Set(enrollments.map((e) => e.student?._id)),
+    [enrollments]
+  );
+
   // Modals state
   const [coModal, setCoModal] = useState({ open: false, co: null });
   const [assessmentModal, setAssessmentModal] = useState({ open: false, assessment: null });
@@ -91,7 +96,7 @@ export default function CourseDetailsPage() {
     if (activeTab === 'students') {
       fetchEnrollments();
       // Load student users list for dropdown
-      listUsersApi({ role: 'student' })
+      listUsersApi({ role: 'student', limit: 500 })
         .then((res) => setAllStudents(res.data.users || []))
         .catch(() => {});
     }
@@ -708,7 +713,7 @@ export default function CourseDetailsPage() {
       <EnrollStudentModal
         open={enrollModal.open}
         students={allStudents}
-        enrolledIds={new Set(enrollments.map((e) => e.student?._id))}
+        enrolledIds={enrolledStudentIds}
         onClose={() => setEnrollModal({ open: false })}
         onEnroll={handleSingleEnroll}
       />
@@ -765,7 +770,7 @@ function COFormModal({ open, co, onClose, onSave }) {
         <FormInput
           label="CO Code (e.g. CO1, CO2)"
           value={code}
-          onChange={setCode}
+          onChange={(e) => setCode(e.target.value)}
           placeholder="CO1"
           required
         />
@@ -783,7 +788,7 @@ function COFormModal({ open, co, onClose, onSave }) {
         <FormSelect
           label="Bloom's Taxonomy Level"
           value={bloomLevel}
-          onChange={setBloomLevel}
+          onChange={(e) => setBloomLevel(e.target.value)}
           options={BLOOM_LEVELS.map((l) => ({ value: l, label: l }))}
         />
         <div className="grid grid-cols-2 gap-3">
@@ -791,7 +796,7 @@ function COFormModal({ open, co, onClose, onSave }) {
             label="Target Marks %"
             type="number"
             value={targetMarksPercentage}
-            onChange={setTargetMarksPercentage}
+            onChange={(e) => setTargetMarksPercentage(e.target.value)}
             min={0}
             max={100}
             required
@@ -800,7 +805,7 @@ function COFormModal({ open, co, onClose, onSave }) {
             label="Attainment Goal %"
             type="number"
             value={targetAttainmentPercentage}
-            onChange={setTargetAttainmentPercentage}
+            onChange={(e) => setTargetAttainmentPercentage(e.target.value)}
             min={0}
             max={100}
             required
@@ -851,14 +856,14 @@ function AssessmentFormModal({ open, assessment, onClose, onSave }) {
         <FormInput
           label="Assessment Name"
           value={name}
-          onChange={setName}
+          onChange={(e) => setName(e.target.value)}
           placeholder="e.g. CIE 1, Quiz 1, End Sem Exam"
           required
         />
         <FormSelect
           label="Assessment Type"
           value={type}
-          onChange={setType}
+          onChange={(e) => setType(e.target.value)}
           options={ASSESSMENT_TYPES}
         />
         <div className="grid grid-cols-2 gap-3">
@@ -866,7 +871,7 @@ function AssessmentFormModal({ open, assessment, onClose, onSave }) {
             label="Maximum Marks"
             type="number"
             value={maxMarks}
-            onChange={setMaxMarks}
+            onChange={(e) => setMaxMarks(e.target.value)}
             min={1}
             required
           />
@@ -874,7 +879,7 @@ function AssessmentFormModal({ open, assessment, onClose, onSave }) {
             label="Weightage"
             type="number"
             value={weightage}
-            onChange={setWeightage}
+            onChange={(e) => setWeightage(e.target.value)}
             step="0.1"
             min={0}
             required
@@ -902,7 +907,7 @@ function QuestionFormModal({ open, assessment, question, cos, onClose, onSave })
     } else {
       setLabel('');
       setMaxMarks(5);
-      setCoId(cos[0]?._id || '');
+      setCoId((prev) => (prev && cos.some((c) => c._id === prev) ? prev : (cos[0]?._id || '')));
     }
   }, [question, cos, open]);
 
@@ -936,7 +941,7 @@ function QuestionFormModal({ open, assessment, question, cos, onClose, onSave })
         <FormInput
           label="Question Label"
           value={label}
-          onChange={setLabel}
+          onChange={(e) => setLabel(e.target.value)}
           placeholder="e.g. Q1, Q1a, Q2"
           required
         />
@@ -944,14 +949,14 @@ function QuestionFormModal({ open, assessment, question, cos, onClose, onSave })
           label="Max Marks for Question"
           type="number"
           value={maxMarks}
-          onChange={setMaxMarks}
+          onChange={(e) => setMaxMarks(e.target.value)}
           min={1}
           required
         />
         <FormSelect
           label="Mapped Course Outcome *"
           value={coId}
-          onChange={setCoId}
+          onChange={(e) => setCoId(e.target.value)}
           options={cos.map((c) => ({
             value: c._id,
             label: `${c.code}: ${c.statement.slice(0, 45)}... (${c.bloomLevel})`,
@@ -969,11 +974,24 @@ function QuestionFormModal({ open, assessment, question, cos, onClose, onSave })
 function EnrollStudentModal({ open, students, enrolledIds, onClose, onEnroll }) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
-  const eligibleStudents = students.filter((s) => !enrolledIds.has(s._id));
+  const eligibleStudents = useMemo(() => {
+    return (students || [])
+      .filter((s) => !enrolledIds?.has(s._id))
+      .sort((a, b) => {
+        const rollA = a.rollNo || a.name || '';
+        const rollB = b.rollNo || b.name || '';
+        return rollA.localeCompare(rollB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+  }, [students, enrolledIds]);
 
   useEffect(() => {
-    if (eligibleStudents.length > 0) {
-      setSelectedStudentId(eligibleStudents[0]._id);
+    if (open) {
+      setSelectedStudentId((prev) => {
+        if (prev && eligibleStudents.some((s) => s._id === prev)) {
+          return prev;
+        }
+        return eligibleStudents[0]?._id || '';
+      });
     } else {
       setSelectedStudentId('');
     }
@@ -994,7 +1012,7 @@ function EnrollStudentModal({ open, students, enrolledIds, onClose, onEnroll }) 
           <FormSelect
             label="Select Student *"
             value={selectedStudentId}
-            onChange={setSelectedStudentId}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
             options={eligibleStudents.map((s) => ({
               value: s._id,
               label: `${s.rollNo ? s.rollNo + ' — ' : ''}${s.name} (${s.email})`,

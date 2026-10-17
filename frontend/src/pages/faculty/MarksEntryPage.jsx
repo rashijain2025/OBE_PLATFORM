@@ -270,7 +270,8 @@ export default function MarksEntryPage() {
           <FormSelect
             label="Select Course"
             value={selectedCourseId}
-            onChange={(val) => {
+            onChange={(e) => {
+              const val = e.target ? e.target.value : e;
               setSelectedCourseId(val);
               setSearchParams({ courseId: val });
             }}
@@ -284,7 +285,8 @@ export default function MarksEntryPage() {
           <FormSelect
             label="Select Assessment"
             value={selectedAssessmentId}
-            onChange={(val) => {
+            onChange={(e) => {
+              const val = e.target ? e.target.value : e;
               setSelectedAssessmentId(val);
               setSearchParams({ courseId: selectedCourseId, assessmentId: val });
             }}

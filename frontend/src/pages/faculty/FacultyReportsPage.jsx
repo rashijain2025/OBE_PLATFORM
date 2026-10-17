@@ -108,7 +108,8 @@ export default function FacultyReportsPage() {
             <FormSelect
               label="Select Course"
               value={selectedCourseId}
-              onChange={(val) => {
+              onChange={(e) => {
+                const val = e.target ? e.target.value : e;
                 setSelectedCourseId(val);
                 setSearchParams({ courseId: val, target: String(target) });
               }}
