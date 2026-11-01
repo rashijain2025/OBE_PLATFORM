@@ -48,20 +48,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center p-4 sm:p-8 bg-background text-gray-900">
-      {/* Top bar with Back to Home */}
-      <div className="w-full max-w-md flex items-center justify-between py-2">
-        <Link
-          to="/"
-          className="text-xs font-medium text-muted hover:text-accent transition-colors flex items-center gap-1.5"
-        >
-          &larr; Back to Home
-        </Link>
-        <span className="text-xs text-muted/70">MITS Gwalior</span>
-      </div>
-
-      {/* Main Login Card Container */}
-      <div className="w-full max-w-md my-auto">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background text-gray-900">
+      <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-6">
           <Link to="/" className="inline-block group">
@@ -171,42 +159,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {/* Footer Credits */}
-      <footer className="w-full max-w-md py-4 text-center text-xs text-muted mt-6">
-        <div className="space-y-1">
-          <p className="text-muted/80">
-            &copy; 2026 MITS Gwalior Outcome Based Education Platform
-          </p>
-          <p className="text-muted">
-            Made by{' '}
-            <a
-              href="https://rashijportfolio.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[#7B112B] hover:underline"
-            >
-              Rashi Jain
-            </a>
-            {' '}&amp;{' '}
-            <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
-          </p>
-          <p className="text-muted">
-            Under the Guidance of{' '}
-            <a
-              href="https://web.mitsgwalior.in/faculty-profiles-it-2/neha-bhardwaj"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[#7B112B] hover:underline"
-            >
-              Neha Bhardwaj
-            </a>
-          </p>
-          <p className="text-muted/70 text-[11px] font-medium tracking-wide">
-            Powered by <span className="font-semibold text-ink">IT Department</span>
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
