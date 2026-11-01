@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { GraduationCap, Lock, Mail, AlertCircle, Loader, ArrowRight } from 'lucide-react';
 
@@ -61,15 +61,19 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-accent text-white flex items-center justify-center shadow-md">
-              <GraduationCap className="w-6 h-6" />
+          <Link to="/" className="inline-flex items-center gap-3 group" title="Back to Homepage">
+            <div className="w-11 h-11 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/20">
+              <img
+                src="/mits_logo.png"
+                alt="MITS Gwalior Logo"
+                className="w-8 h-8 object-contain"
+              />
             </div>
             <div>
-              <div className="font-serif text-xl font-bold tracking-tight text-white">OBE Platform</div>
-              <div className="text-xs text-gray-300">Outcome-Based Education</div>
+              <div className="font-serif text-xl font-bold tracking-tight text-white group-hover:text-accent transition-colors">OBE Platform</div>
+              <div className="text-xs text-gray-300">MITS Gwalior</div>
             </div>
-          </div>
+          </Link>
         </div>
 
         <div className="relative z-10 my-auto py-12">
@@ -85,7 +89,9 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 text-xs text-gray-400 border-t border-white/10 pt-4 flex justify-between items-center">
-          <span>Continuous Quality Improvement</span>
+          <Link to="/" className="text-accent hover:underline flex items-center gap-1">
+            &larr; Back to Home
+          </Link>
           <span>Tier-1 / Tier-2 Aligned</span>
         </div>
       </div>
@@ -94,11 +100,17 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative">
         {/* Mobile brand header */}
         <div className="lg:hidden text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-ink text-white mb-3 shadow-md">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h1 className="font-serif text-2xl font-bold text-ink">OBE Platform</h1>
-          <p className="text-muted text-xs mt-1">Measure outcomes, not just marks</p>
+          <Link to="/" className="inline-block">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white p-1.5 mb-3 shadow-md border border-border">
+              <img
+                src="/mits_logo.png"
+                alt="MITS Gwalior Logo"
+                className="w-11 h-11 object-contain"
+              />
+            </div>
+            <h1 className="font-serif text-2xl font-bold text-ink">OBE Platform</h1>
+            <p className="text-muted text-xs mt-1">Madhav Institute of Technology &amp; Science, Gwalior</p>
+          </Link>
         </div>
 
         <div className="w-full max-w-md">

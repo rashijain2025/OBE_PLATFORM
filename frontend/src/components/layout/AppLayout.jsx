@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -91,15 +91,19 @@ export default function AppLayout() {
     <div className="min-h-screen bg-paper flex flex-col">
       {/* Top Navbar */}
       <header className="border-b border-border bg-surface/95 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between shadow-card">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-ink flex items-center justify-center font-bold text-white">
-            <GraduationCap className="w-5 h-5" />
+        <Link to="/dashboard" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-full bg-white p-1 flex items-center justify-center shadow-sm border border-border group-hover:scale-105 transition-transform">
+            <img
+              src="/mits_logo.png"
+              alt="MITS Gwalior Logo"
+              className="w-7 h-7 object-contain"
+            />
           </div>
           <div>
-            <h1 className="text-base font-bold text-ink leading-tight font-serif">OBE Platform</h1>
-            <p className="text-xs text-muted hidden sm:block">Outcome-Based Education System</p>
+            <h1 className="text-base font-bold text-ink leading-tight font-serif group-hover:text-accent transition-colors">OBE Platform</h1>
+            <p className="text-xs text-muted hidden sm:block">Madhav Institute of Technology &amp; Science</p>
           </div>
-        </div>
+        </Link>
 
         {/* User Info & Logout */}
         <div className="flex items-center gap-4">

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import AppLayout from '../components/layout/AppLayout';
 import LoginPage from '../pages/auth/LoginPage';
+import HomePage from '../pages/HomePage';
 import DashboardPage from '../pages/DashboardPage';
 import HealthPage from '../pages/HealthPage';
 import UsersPage from '../pages/admin/UsersPage';
@@ -78,9 +79,11 @@ export default function AppRouter() {
             <Route path="/model" element={<ModelPage />} />
           </Route>
 
-          {/* Root Redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Public Landing Route */}
+          <Route path="/" element={<HomePage />} />
+
+          {/* Catch-all Redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
