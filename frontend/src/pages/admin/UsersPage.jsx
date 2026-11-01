@@ -263,15 +263,15 @@ function BulkImportStudentsModal({ open, departments, onClose, onSuccess, showTo
   return (
     <Modal open={open} title="Bulk Import Student Records by Roll Number" onClose={handleReset}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="text-xs text-gray-400">
-          Enter roll numbers one per line. Optionally format as <code className="text-indigo-400">RollNo, Full Name, Email</code>.
+        <div className="text-xs text-muted">
+          Enter roll numbers one per line. Optionally format as <code className="text-accent">RollNo, Full Name, Email</code>.
         </div>
         <FormSelect label="Target Department (Default)" id="bulk-stu-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
           <option value="">Select Department (Optional)</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">
             Roll Numbers / CSV Data *
           </label>
           <textarea
@@ -279,16 +279,16 @@ function BulkImportStudentsModal({ open, departments, onClose, onSuccess, showTo
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
             placeholder={`22IT011\n22IT012, Pooja Patel, pooja@student.obe.edu\n22IT013`}
-            className="w-full rounded-lg bg-gray-950 border border-gray-800 p-3 text-white font-mono text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full rounded-lg bg-surface border border-border p-3 text-ink font-mono text-xs focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
           />
         </div>
 
         {result && (
-          <div className="p-3 bg-gray-800/80 rounded-lg text-xs space-y-1">
-            <div className="font-semibold text-white">Import Summary:</div>
-            <div className="text-emerald-400">✓ {result.createdCount} student records created</div>
+          <div className="p-3 bg-paper rounded-lg text-xs space-y-1 border border-border">
+            <div className="font-semibold text-ink">Import Summary:</div>
+            <div className="text-status-attained font-medium">✓ {result.createdCount} student records created</div>
             {result.skippedCount > 0 && (
-              <div className="text-amber-400">⚠ {result.skippedCount} skipped (already registered)</div>
+              <div className="text-status-borderline font-medium">⚠ {result.skippedCount} skipped (already registered)</div>
             )}
           </div>
         )}
@@ -397,7 +397,7 @@ export default function UsersPage() {
 
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="text-center py-16 text-red-400">
+      <div className="text-center py-16 text-status-below">
         Access denied. Admin only.
       </div>
     );
@@ -454,13 +454,13 @@ export default function UsersPage() {
       />
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-800 space-x-1">
+      <div className="flex border-b border-border space-x-1">
         <button
           onClick={() => { setActiveTab('system'); setSearch(''); }}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all cursor-pointer ${
             activeTab === 'system'
-              ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10 rounded-t-lg'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-ink text-ink font-semibold bg-paper/60 rounded-t-lg'
+              : 'border-transparent text-muted hover:text-ink'
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
@@ -468,10 +468,10 @@ export default function UsersPage() {
         </button>
         <button
           onClick={() => { setActiveTab('students'); setSearch(''); }}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all cursor-pointer ${
             activeTab === 'students'
-              ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10 rounded-t-lg'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
+              ? 'border-ink text-ink font-semibold bg-paper/60 rounded-t-lg'
+              : 'border-transparent text-muted hover:text-ink'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
@@ -487,7 +487,7 @@ export default function UsersPage() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="px-3 py-2 rounded-lg bg-surface border border-border text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
             >
               <option value="">All System Roles</option>
               {SYSTEM_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -499,22 +499,22 @@ export default function UsersPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Name</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Role</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
+                    <tr className="border-b border-border bg-paper/50">
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Name</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Role</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
                       <th className="px-4 py-3 text-right" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {filteredSystemUsers.map((u) => (
-                      <tr key={u._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{u.name}</td>
-                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{u.email}</td>
+                      <tr key={u._id} className="hover:bg-paper/60 transition-colors">
+                        <td className="px-4 py-3 font-medium text-ink">{u.name}</td>
+                        <td className="px-4 py-3 text-muted hidden sm:table-cell">{u.email}</td>
                         <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
-                        <td className="px-4 py-3 text-gray-400 hidden md:table-cell">
+                        <td className="px-4 py-3 text-muted hidden md:table-cell">
                           {u.department?.name ? `${u.department.name} (${u.department.code})` : '—'}
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell"><StatusBadge active={u.isActive} /></td>
@@ -548,10 +548,10 @@ export default function UsersPage() {
       {/* STUDENT RECORDS TAB */}
       {activeTab === 'students' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-800 bg-gray-900/60">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-paper/60">
             <div>
-              <h3 className="text-sm font-semibold text-white">Student Academic Records</h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <h3 className="text-sm font-semibold text-ink">Student Academic Records</h3>
+              <p className="text-xs text-muted mt-0.5">
                 Students are recorded as data entities for enrollments, marks entry, and CO attainment. Student accounts do not have platform login permissions.
               </p>
             </div>
@@ -566,22 +566,26 @@ export default function UsersPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Roll No</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Name</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
+                    <tr className="border-b border-border bg-paper/50">
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Roll No</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Name</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
                       <th className="px-4 py-3 text-right" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {filteredStudentRecords.map((s) => (
-                      <tr key={s._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="px-4 py-3 font-mono text-amber-400 text-xs font-semibold">{s.rollNo || '—'}</td>
-                        <td className="px-4 py-3 font-medium text-white">{s.name}</td>
-                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{s.email}</td>
-                        <td className="px-4 py-3 text-gray-400 hidden md:table-cell">
+                      <tr key={s._id} className="hover:bg-paper/60 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block tabular-nums">
+                            {s.rollNo || '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-ink">{s.name}</td>
+                        <td className="px-4 py-3 text-muted hidden sm:table-cell">{s.email}</td>
+                        <td className="px-4 py-3 text-muted hidden md:table-cell">
                           {s.department?.name ? `${s.department.name} (${s.department.code})` : '—'}
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell"><StatusBadge active={s.isActive} /></td>

@@ -112,11 +112,11 @@ export default function EnrollmentPage() {
 
       {/* Course Selector */}
       <Card className="p-4">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Select Course</label>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-2">Select Course</label>
         <select
           value={selectedCourse}
           onChange={(e) => setSelectedCourse(e.target.value)}
-          className="w-full sm:w-80 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          className="w-full sm:w-80 px-3 py-2 rounded-lg bg-surface border border-border text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors"
         >
           <option value="">— Choose a course —</option>
           {courses.map((c) => (
@@ -129,8 +129,8 @@ export default function EnrollmentPage() {
       {selectedCourse && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-              <Users className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <Users className="w-4 h-4 text-accent" />
               {enrollments.length} student{enrollments.length !== 1 ? 's' : ''} enrolled in {selectedCourseName}
             </h3>
             <GhostButton onClick={() => fetchEnrollments(selectedCourse)}><RefreshCw className="w-3.5 h-3.5" /></GhostButton>
@@ -140,19 +140,23 @@ export default function EnrollmentPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Student</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Roll No</th>
+                    <tr className="border-b border-border bg-paper/50">
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Student</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden sm:table-cell">Email</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Roll No</th>
                       {canEdit && <th className="px-4 py-3" />}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {enrollments.map((e) => (
-                      <tr key={e._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{e.student?.name || '—'}</td>
-                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{e.student?.email || '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-amber-400">{e.student?.rollNo || '—'}</td>
+                      <tr key={e._id} className="hover:bg-paper/60 transition-colors">
+                        <td className="px-4 py-3 font-medium text-ink">{e.student?.name || '—'}</td>
+                        <td className="px-4 py-3 text-muted hidden sm:table-cell">{e.student?.email || '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block tabular-nums">
+                            {e.student?.rollNo || '—'}
+                          </span>
+                        </td>
                         {canEdit && (
                           <td className="px-4 py-3">
                             <DangerButton onClick={() => handleRemove(e)}><Trash2 className="w-3 h-3" /></DangerButton>
@@ -190,22 +194,22 @@ export default function EnrollmentPage() {
       <Modal open={bulkModal} title="Bulk Enroll by Roll Numbers" onClose={() => { setBulkModal(false); setBulkText(''); setBulkResult(null); }}>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Roll Numbers (one per line or comma-separated)</label>
+            <label className="block text-xs font-medium text-muted mb-1.5">Roll Numbers (one per line or comma-separated)</label>
             <textarea
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
               rows={6}
               placeholder="22IT001&#10;22IT002&#10;22IT003"
-              className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-ink placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors resize-none"
             />
           </div>
           {bulkResult && (
             <div className="text-xs space-y-1">
-              <div className="text-emerald-400">✓ Enrolled: {bulkResult.enrolled?.length || 0}</div>
-              <div className="text-amber-400">⏭ Skipped (already enrolled): {bulkResult.skipped?.length || 0}</div>
-              <div className="text-red-400">✗ Errors (not found): {bulkResult.errors?.length || 0}</div>
+              <div className="text-status-attained font-medium">✓ Enrolled: {bulkResult.enrolled?.length || 0}</div>
+              <div className="text-status-borderline font-medium">⏭ Skipped (already enrolled): {bulkResult.skipped?.length || 0}</div>
+              <div className="text-status-below font-medium">✗ Errors (not found): {bulkResult.errors?.length || 0}</div>
               {bulkResult.errors?.length > 0 && (
-                <div className="text-gray-500 mt-1">Not found: {bulkResult.errors.map((e) => e.rollNo).join(', ')}</div>
+                <div className="text-muted mt-1">Not found: {bulkResult.errors.map((e) => e.rollNo).join(', ')}</div>
               )}
             </div>
           )}
