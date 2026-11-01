@@ -150,13 +150,13 @@ export default function COPOMappingPage() {
   const getStrengthBadge = (strength) => {
     switch (strength) {
       case 3:
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
+        return 'bg-status-attained-soft text-status-attained border-emerald-300 font-bold font-mono';
       case 2:
-        return 'bg-blue-500/20 text-blue-300 border-blue-500/40 font-bold';
+        return 'bg-blue-50 text-blue-700 border-blue-300 font-bold font-mono';
       case 1:
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold';
+        return 'bg-status-borderline-soft text-status-borderline border-amber-300 font-bold font-mono';
       default:
-        return 'bg-gray-800/60 text-gray-400 border-gray-700 font-normal';
+        return 'bg-paper text-muted border-border font-normal font-mono cell-not-evaluated';
     }
   };
 
@@ -165,15 +165,15 @@ export default function COPOMappingPage() {
   return (
     <div className="space-y-6">
       {/* Header & Course Selector */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface border border-border p-6 rounded-2xl shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <div className="p-2.5 rounded-xl bg-accent-soft text-accent border border-teal-200">
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">CO-PO & CO-PSO Mapping Matrix</h1>
-              <p className="text-sm text-gray-400">
+              <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">CO-PO & CO-PSO Mapping Matrix</h1>
+              <p className="text-sm text-muted">
                 Correlate Course Outcomes to Washington Accord Graduate Attributes (1 = Low, 2 = Medium, 3 = High)
               </p>
             </div>
@@ -185,7 +185,7 @@ export default function COPOMappingPage() {
           <select
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value)}
-            className="w-full sm:w-72 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+            className="w-full sm:w-72 bg-paper border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink shadow-sm"
           >
             {courses.map((c) => (
               <option key={c._id} value={c._id}>
@@ -198,7 +198,7 @@ export default function COPOMappingPage() {
             <button
               onClick={handleSave}
               disabled={saving || loading || !matrixData?.cos?.length}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition-all shrink-0"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-ink hover:bg-ink-dark text-paper text-sm font-semibold shadow-sm disabled:opacity-50 transition-all shrink-0"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? 'Saving...' : 'Save Matrix'}</span>
@@ -209,14 +209,14 @@ export default function COPOMappingPage() {
 
       {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/40 text-red-300 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-status-below-soft border border-red-200 text-status-below text-sm flex items-center gap-3">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-status-attained-soft border border-emerald-200 text-status-attained text-sm flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <span>{success}</span>
         </div>
@@ -224,51 +224,51 @@ export default function COPOMappingPage() {
 
       {/* Course Context Card */}
       {matrixData?.course && (
-        <div className="bg-gray-900/60 border border-gray-800/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-300">
+        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs text-muted shadow-sm">
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-gray-400">Course:</span>{' '}
-              <strong className="text-white text-sm">{matrixData.course.code}</strong> - {matrixData.course.name}
+              <span className="text-muted">Course:</span>{' '}
+              <strong className="text-ink font-semibold text-sm">{matrixData.course.code}</strong> - {matrixData.course.name}
             </div>
             <div>
-              <span className="text-gray-400">Programme:</span>{' '}
-              <strong className="text-white">{matrixData.course.programme?.name}</strong>
+              <span className="text-muted">Programme:</span>{' '}
+              <strong className="text-ink font-semibold">{matrixData.course.programme?.name}</strong>
             </div>
             <div>
-              <span className="text-gray-400">Faculty:</span>{' '}
-              <strong className="text-white">{matrixData.course.faculty?.name || 'Unassigned'}</strong>
+              <span className="text-muted">Faculty:</span>{' '}
+              <strong className="text-ink font-semibold">{matrixData.course.faculty?.name || 'Unassigned'}</strong>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-400">Legend:</span>
-            <span className="px-2 py-0.5 rounded border bg-gray-800/60 text-gray-400 border-gray-700">0: None</span>
-            <span className="px-2 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/40 font-semibold">1: Low</span>
-            <span className="px-2 py-0.5 rounded border bg-blue-500/20 text-blue-300 border-blue-500/40 font-semibold">2: Medium</span>
-            <span className="px-2 py-0.5 rounded border bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-semibold">3: High</span>
+          <div className="flex items-center gap-3 font-mono">
+            <span className="text-muted font-sans">Legend:</span>
+            <span className="px-2 py-0.5 rounded border bg-paper text-muted border-border">0: None</span>
+            <span className="px-2 py-0.5 rounded border bg-status-borderline-soft text-status-borderline border-amber-200 font-semibold tabular-nums">1: Low</span>
+            <span className="px-2 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200 font-semibold tabular-nums">2: Medium</span>
+            <span className="px-2 py-0.5 rounded border bg-status-attained-soft text-status-attained border-emerald-200 font-semibold tabular-nums">3: High</span>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="p-12 text-center text-gray-400">Loading matrix...</div>
+        <div className="p-12 text-center text-muted font-mono">Loading matrix...</div>
       ) : !matrixData?.cos?.length ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center space-y-3">
-          <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No Course Outcomes Defined</h3>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">
+        <div className="bg-surface border border-border rounded-2xl p-12 text-center space-y-3 shadow-sm">
+          <AlertCircle className="w-10 h-10 text-accent mx-auto" />
+          <h3 className="text-lg font-serif font-bold text-ink">No Course Outcomes Defined</h3>
+          <p className="text-sm text-muted max-w-md mx-auto">
             Please define Course Outcomes (COs) for this course first before setting up mapping correlations.
           </p>
         </div>
       ) : (
         <div className="space-y-8">
           {/* SECTION 1: CO-PO MATRIX */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-lg font-serif font-bold text-ink flex items-center gap-2">
+                <Layers className="w-5 h-5 text-accent" />
                 <span>Course Outcomes to Program Outcomes (CO-PO) Correlation Matrix</span>
               </h2>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted font-mono tabular-nums">
                 {matrixData.cos.length} COs × {matrixData.pos.length} POs
               </span>
             </div>
@@ -276,29 +276,29 @@ export default function COPOMappingPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse min-w-[800px]">
                 <thead>
-                  <tr className="border-b border-gray-800 bg-gray-950/60">
-                    <th className="py-3 px-4 font-bold text-gray-300 w-28">CO Code</th>
-                    <th className="py-3 px-4 font-semibold text-gray-400 max-w-xs">Statement</th>
+                  <tr className="border-b border-border bg-paper text-muted">
+                    <th className="py-3 px-4 font-bold text-ink w-28">CO Code</th>
+                    <th className="py-3 px-4 font-semibold text-muted max-w-xs">Statement</th>
                     {matrixData.pos.map((po) => (
                       <th
                         key={po._id}
                         title={`${po.code}: ${po.title} — ${po.statement}`}
-                        className="py-3 px-3 font-bold text-indigo-400 text-center w-16 cursor-help"
+                        className="py-3 px-3 font-mono font-bold text-accent text-center w-16 cursor-help"
                       >
                         {po.code}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/60">
+                <tbody className="divide-y divide-border">
                   {matrixData.cos.map((co) => (
-                    <tr key={co._id} className="hover:bg-gray-800/30 transition-colors">
-                      <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs">
+                    <tr key={co._id} className="hover:bg-paper/50 transition-colors">
+                      <td className="py-3 px-4 font-bold text-ink flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-accent-soft text-accent border border-teal-200 text-xs font-mono font-bold">
                           {co.code}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs text-gray-300 max-w-xs line-clamp-2" title={co.statement}>
+                      <td className="py-3 px-4 text-xs text-ink max-w-xs line-clamp-2" title={co.statement}>
                         {co.statement}
                       </td>
                       {matrixData.pos.map((po) => {
@@ -311,18 +311,18 @@ export default function COPOMappingPage() {
                               <select
                                 value={currentStrength}
                                 onChange={(e) => handleCellChange('copo', co._id, po._id, e.target.value)}
-                                className={`w-12 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer transition-all ${getStrengthBadge(
+                                className={`w-12 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-ink cursor-pointer transition-all tabular-nums ${getStrengthBadge(
                                   currentStrength
                                 )}`}
                               >
-                                <option value="0" className="bg-gray-900 text-gray-400">-</option>
-                                <option value="1" className="bg-gray-900 text-amber-300">1</option>
-                                <option value="2" className="bg-gray-900 text-blue-300">2</option>
-                                <option value="3" className="bg-gray-900 text-emerald-300">3</option>
+                                <option value="0" className="bg-surface text-muted">-</option>
+                                <option value="1" className="bg-surface text-status-borderline">1</option>
+                                <option value="2" className="bg-surface text-blue-700">2</option>
+                                <option value="3" className="bg-surface text-status-attained">3</option>
                               </select>
                             ) : (
                               <span
-                                className={`inline-block w-8 py-1 text-xs rounded border text-center ${getStrengthBadge(
+                                className={`inline-block w-8 py-1 text-xs rounded border text-center tabular-nums ${getStrengthBadge(
                                   currentStrength
                                 )}`}
                               >
@@ -336,8 +336,8 @@ export default function COPOMappingPage() {
                   ))}
 
                   {/* Average Row */}
-                  <tr className="bg-gray-950/80 font-bold border-t border-gray-700">
-                    <td className="py-3 px-4 text-indigo-400" colSpan={2}>
+                  <tr className="bg-paper font-bold border-t border-border">
+                    <td className="py-3 px-4 text-ink font-serif" colSpan={2}>
                       Average Correlation
                     </td>
                     {matrixData.pos.map((po) => {
@@ -346,7 +346,7 @@ export default function COPOMappingPage() {
                         .filter((s) => s > 0);
                       const avg = strengths.length > 0 ? (strengths.reduce((a, b) => a + b, 0) / strengths.length).toFixed(1) : '-';
                       return (
-                        <td key={po._id} className="py-3 px-2 text-center text-xs text-white">
+                        <td key={po._id} className="py-3 px-2 text-center text-xs text-ink font-mono font-bold tabular-nums">
                           {avg}
                         </td>
                       );
@@ -359,13 +359,13 @@ export default function COPOMappingPage() {
 
           {/* SECTION 2: CO-PSO MATRIX */}
           {matrixData.psos.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-lg font-serif font-bold text-ink flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-accent" />
                   <span>Course Outcomes to Program Specific Outcomes (CO-PSO) Matrix</span>
                 </h2>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted font-mono tabular-nums">
                   {matrixData.cos.length} COs × {matrixData.psos.length} PSOs
                 </span>
               </div>
@@ -373,29 +373,29 @@ export default function COPOMappingPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse min-w-[600px]">
                   <thead>
-                    <tr className="border-b border-gray-800 bg-gray-950/60">
-                      <th className="py-3 px-4 font-bold text-gray-300 w-28">CO Code</th>
-                      <th className="py-3 px-4 font-semibold text-gray-400 max-w-sm">Statement</th>
+                    <tr className="border-b border-border bg-paper text-muted">
+                      <th className="py-3 px-4 font-bold text-ink w-28">CO Code</th>
+                      <th className="py-3 px-4 font-semibold text-muted max-w-sm">Statement</th>
                       {matrixData.psos.map((pso) => (
                         <th
                           key={pso._id}
                           title={`${pso.code}: ${pso.statement}`}
-                          className="py-3 px-4 font-bold text-emerald-400 text-center w-24 cursor-help"
+                          className="py-3 px-4 font-mono font-bold text-accent text-center w-24 cursor-help"
                         >
                           {pso.code}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {matrixData.cos.map((co) => (
-                      <tr key={co._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs">
+                      <tr key={co._id} className="hover:bg-paper/50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-ink flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-accent-soft text-accent border border-teal-200 text-xs font-mono font-bold">
                             {co.code}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-xs text-gray-300 max-w-sm line-clamp-2" title={co.statement}>
+                        <td className="py-3 px-4 text-xs text-ink max-w-sm line-clamp-2" title={co.statement}>
                           {co.statement}
                         </td>
                         {matrixData.psos.map((pso) => {
@@ -408,18 +408,18 @@ export default function COPOMappingPage() {
                                 <select
                                   value={currentStrength}
                                   onChange={(e) => handleCellChange('copso', co._id, pso._id, e.target.value)}
-                                  className={`w-14 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all ${getStrengthBadge(
+                                  className={`w-14 h-8 text-center text-xs rounded-lg border focus:outline-none focus:ring-1 focus:ring-ink cursor-pointer transition-all tabular-nums ${getStrengthBadge(
                                     currentStrength
                                   )}`}
                                 >
-                                  <option value="0" className="bg-gray-900 text-gray-400">-</option>
-                                  <option value="1" className="bg-gray-900 text-amber-300">1</option>
-                                  <option value="2" className="bg-gray-900 text-blue-300">2</option>
-                                  <option value="3" className="bg-gray-900 text-emerald-300">3</option>
+                                  <option value="0" className="bg-surface text-muted">-</option>
+                                  <option value="1" className="bg-surface text-status-borderline">1</option>
+                                  <option value="2" className="bg-surface text-blue-700">2</option>
+                                  <option value="3" className="bg-surface text-status-attained">3</option>
                                 </select>
                               ) : (
                                 <span
-                                  className={`inline-block w-10 py-1 text-xs rounded border text-center ${getStrengthBadge(
+                                  className={`inline-block w-10 py-1 text-xs rounded border text-center tabular-nums ${getStrengthBadge(
                                     currentStrength
                                   )}`}
                                 >
@@ -433,8 +433,8 @@ export default function COPOMappingPage() {
                     ))}
 
                     {/* Average Row */}
-                    <tr className="bg-gray-950/80 font-bold border-t border-gray-700">
-                      <td className="py-3 px-4 text-emerald-400" colSpan={2}>
+                    <tr className="bg-paper font-bold border-t border-border">
+                      <td className="py-3 px-4 text-ink font-serif" colSpan={2}>
                         Average Correlation
                       </td>
                       {matrixData.psos.map((pso) => {
@@ -443,7 +443,7 @@ export default function COPOMappingPage() {
                           .filter((s) => s > 0);
                         const avg = strengths.length > 0 ? (strengths.reduce((a, b) => a + b, 0) / strengths.length).toFixed(1) : '-';
                         return (
-                          <td key={pso._id} className="py-3 px-4 text-center text-xs text-white">
+                          <td key={pso._id} className="py-3 px-4 text-center text-xs text-ink font-mono font-bold tabular-nums">
                             {avg}
                           </td>
                         );
