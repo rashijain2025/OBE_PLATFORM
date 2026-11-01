@@ -1,41 +1,88 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════
+   INK & PAPER — Design Tokens
+   ═══════════════════════════════════════════════════════════ */
 @theme {
+  /* Surfaces */
   --color-paper: #FAF7F2;
   --color-surface: #FFFFFF;
   --color-border: #E7E1D6;
+
+  /* Primary: Navy */
   --color-ink: #1B2A4A;
   --color-ink-dark: #14203A;
   --color-ink-foreground: #FFFFFF;
+
+  /* Accent: Teal */
   --color-accent: #0F9FA8;
   --color-accent-soft: #E3F4F5;
+
+  /* Typography */
   --color-text-main: #1F2937;
   --color-text-muted: #6B7280;
-  --color-status-attained: #059669;
-  --color-status-borderline: #D97706;
-  --color-status-below: #E11D48;
 
-  --font-serif: 'Fraunces', Georgia, serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Status (results only, never brand) */
+  --color-status-attained: #059669;
+  --color-status-attained-soft: #ECFDF5;
+  --color-status-borderline: #D97706;
+  --color-status-borderline-soft: #FFFBEB;
+  --color-status-below: #E11D48;
+  --color-status-below-soft: #FFF1F2;
+
+  /* Chart palette */
+  --color-chart-1: #1B2A4A;
+  --color-chart-2: #0F9FA8;
+  --color-chart-3: #6366F1;
+  --color-chart-4: #94A3B8;
+  --color-chart-target: #E11D48;
+
+  /* Fonts */
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CSS Custom Properties (semantic aliases for JS/inline use)
+   ═══════════════════════════════════════════════════════════ */
 :root {
+  /* Surfaces */
   --background: #FAF7F2;
   --surface: #FFFFFF;
   --border: #E7E1D6;
+
+  /* Primary */
   --primary: #1B2A4A;
   --primary-dark: #14203A;
   --primary-foreground: #FFFFFF;
+
+  /* Accent */
   --accent: #0F9FA8;
   --accent-soft: #E3F4F5;
+
+  /* Text */
   --text: #1F2937;
   --text-muted: #6B7280;
+
+  /* Status */
   --status-attained: #059669;
+  --status-attained-soft: #ECFDF5;
   --status-borderline: #D97706;
+  --status-borderline-soft: #FFFBEB;
   --status-below: #E11D48;
+  --status-below-soft: #FFF1F2;
+
+  /* Chart palette */
+  --chart-1: #1B2A4A;
+  --chart-2: #0F9FA8;
+  --chart-3: #6366F1;
+  --chart-4: #94A3B8;
+  --chart-target: #E11D48;
 }
 
-/* Reduced motion preference */
+/* ═══════════════════════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
@@ -45,24 +92,39 @@
   }
 }
 
-/* Base Body & Typography */
+/* ═══════════════════════════════════════════════════════════
+   Base Typography & Body
+   ═══════════════════════════════════════════════════════════ */
 body {
   background-color: var(--background);
   color: var(--text);
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, .font-serif {
   font-family: var(--font-serif);
 }
 
+/* Tabular numbers for data-heavy UIs */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Marks Grid: Not evaluated hatched background */
+/* ═══════════════════════════════════════════════════════════
+   Focus Visible — global accessible focus ring
+   ═══════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Marks Grid: "Not evaluated" hatched cell
+   Must look clearly different from 0 — dashed diagonal stripes
+   ═══════════════════════════════════════════════════════════ */
 .cell-not-evaluated {
   background-color: #FAF7F2;
   background-image: repeating-linear-gradient(
@@ -73,4 +135,31 @@ h1, h2, h3, h4, .font-serif {
     #FAF7F2 8px
   );
   color: #9CA3AF;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Utility: card shadow (very soft, Ink & Paper)
+   ═══════════════════════════════════════════════════════════ */
+.shadow-card {
+  box-shadow:
+    0 2px 10px -2px rgba(27, 42, 74, 0.04),
+    0 1px 3px -1px rgba(27, 42, 74, 0.02);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Scrollbar styling (subtle, matches paper theme)
+   ═══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1C9BB;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8AFA0;
 }

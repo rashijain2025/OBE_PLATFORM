@@ -41,14 +41,14 @@ function Toast({ toast, dismiss }) {
     <div
       className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium animate-in slide-in-from-right-4 duration-300 ${
         isSuccess
-          ? 'bg-emerald-950 border-emerald-700/50 text-emerald-300'
-          : 'bg-red-950 border-red-700/50 text-red-300'
+          ? 'bg-status-attained-soft border-emerald-200 text-status-attained'
+          : 'bg-status-below-soft border-red-200 text-status-below'
       }`}
     >
       {isSuccess ? (
-        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+        <CheckCircle2 className="w-4 h-4 shrink-0 text-status-attained" />
       ) : (
-        <XCircle className="w-4 h-4 shrink-0 text-red-400" />
+        <XCircle className="w-4 h-4 shrink-0 text-status-below" />
       )}
       <span>{toast.message}</span>
       <button
