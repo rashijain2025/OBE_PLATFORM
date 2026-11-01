@@ -189,7 +189,14 @@ export default function AppLayout() {
               </p>
               <p className="text-muted">
                 Under the Guidance of{' '}
-                <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
+                <a
+                  href="https://web.mitsgwalior.in/faculty-profiles-it-2/neha-bhardwaj"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[#7B112B] hover:underline"
+                >
+                  Neha Bhardwaj
+                </a>
               </p>
               <p className="text-muted/70 text-[11px] font-medium tracking-wide">
                 Powered by <span className="font-semibold text-ink">IT Department</span>
