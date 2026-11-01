@@ -274,7 +274,7 @@ export default function CourseDetailsPage() {
       <div className="p-6">
         <EmptyState message="Course not found or access denied" />
         <div className="mt-4 text-center">
-          <Link to="/courses" className="text-indigo-400 hover:underline text-sm">
+          <Link to="/courses" className="text-accent hover:underline text-sm font-medium">
             ← Back to Courses
           </Link>
         </div>
@@ -289,57 +289,57 @@ export default function CourseDetailsPage() {
       <ToastContainer toasts={toasts} />
 
       {/* Back link & breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <Link to="/courses" className="hover:text-white transition-colors flex items-center gap-1">
+      <div className="flex items-center gap-2 text-sm text-muted">
+        <Link to="/courses" className="hover:text-ink transition-colors flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Courses
         </Link>
-        <ChevronRight className="w-4 h-4 text-gray-600" />
-        <span className="text-white font-medium">{course.code}</span>
+        <ChevronRight className="w-4 h-4 text-muted/60" />
+        <span className="text-ink font-semibold">{course.code}</span>
       </div>
 
       {/* Course Banner Header */}
-      <div className="rounded-xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900 to-indigo-950/40 p-6">
+      <div className="rounded-2xl border border-border bg-surface shadow-card p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-paper text-ink border border-border">
                 {course.code}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300">
+              <span className="text-xs px-2 py-0.5 rounded bg-paper border border-border text-muted">
                 Sem {course.semester}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300">
+              <span className="text-xs px-2 py-0.5 rounded bg-paper border border-border text-muted">
                 {course.academicYear}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+              <span className="text-xs px-2 py-0.5 rounded bg-accent-soft text-accent border border-teal-200 font-medium">
                 {course.credits} Credits
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">{course.name}</h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Programme: <span className="text-gray-300 font-medium">{course.programme?.name} ({course.programme?.code})</span> · Faculty: <span className="text-emerald-400 font-medium">{course.faculty?.name}</span>
+            <h1 className="font-serif text-2xl font-bold text-ink tracking-tight">{course.name}</h1>
+            <p className="text-sm text-muted mt-1">
+              Programme: <span className="text-ink font-medium">{course.programme?.name} ({course.programme?.code})</span> · Faculty: <span className="text-ink font-medium">{course.faculty?.name}</span>
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-lg border border-gray-800 bg-gray-900/80 px-4 py-2.5 text-center">
-              <div className="text-xs text-gray-400 uppercase font-semibold">Enrolled</div>
-              <div className="text-xl font-bold text-white flex items-center justify-center gap-1.5 mt-0.5">
-                <Users className="w-4 h-4 text-indigo-400" />
+            <div className="rounded-xl border border-border bg-paper/60 px-4 py-2.5 text-center">
+              <div className="text-xs text-muted uppercase font-semibold">Enrolled</div>
+              <div className="text-xl font-bold text-ink font-serif flex items-center justify-center gap-1.5 mt-0.5 tabular-nums">
+                <Users className="w-4 h-4 text-accent" />
                 <span>{enrollmentsCount}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-gray-900/80 px-4 py-2.5 text-center">
-              <div className="text-xs text-gray-400 uppercase font-semibold">COs</div>
-              <div className="text-xl font-bold text-white flex items-center justify-center gap-1.5 mt-0.5">
-                <Award className="w-4 h-4 text-purple-400" />
+            <div className="rounded-xl border border-border bg-paper/60 px-4 py-2.5 text-center">
+              <div className="text-xs text-muted uppercase font-semibold">COs</div>
+              <div className="text-xl font-bold text-ink font-serif flex items-center justify-center gap-1.5 mt-0.5 tabular-nums">
+                <Award className="w-4 h-4 text-accent" />
                 <span>{cos?.length || 0}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-gray-900/80 px-4 py-2.5 text-center">
-              <div className="text-xs text-gray-400 uppercase font-semibold">Assessments</div>
-              <div className="text-xl font-bold text-white flex items-center justify-center gap-1.5 mt-0.5">
-                <CheckSquare className="w-4 h-4 text-blue-400" />
+            <div className="rounded-xl border border-border bg-paper/60 px-4 py-2.5 text-center">
+              <div className="text-xs text-muted uppercase font-semibold">Assessments</div>
+              <div className="text-xl font-bold text-ink font-serif flex items-center justify-center gap-1.5 mt-0.5 tabular-nums">
+                <CheckSquare className="w-4 h-4 text-accent" />
                 <span>{assessments?.length || 0}</span>
               </div>
             </div>
@@ -348,48 +348,48 @@ export default function CourseDetailsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-800 gap-4">
+      <div className="flex border-b border-border gap-4">
         <button
           onClick={() => setActiveTab('cos')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'cos'
-              ? 'border-indigo-500 text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-ink text-ink font-semibold'
+              : 'border-transparent text-muted hover:text-ink'
           }`}
         >
           <Award className="w-4 h-4" />
           <span>Course Outcomes (COs)</span>
-          <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-800 text-gray-300">
+          <span className="px-1.5 py-0.5 text-xs rounded-full bg-paper border border-border text-muted tabular-nums">
             {cos?.length || 0}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('assessments')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'assessments'
-              ? 'border-indigo-500 text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-ink text-ink font-semibold'
+              : 'border-transparent text-muted hover:text-ink'
           }`}
         >
           <CheckSquare className="w-4 h-4" />
           <span>Assessments & Questions</span>
-          <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-800 text-gray-300">
+          <span className="px-1.5 py-0.5 text-xs rounded-full bg-paper border border-border text-muted tabular-nums">
             {assessments?.length || 0}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('students')}
-          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+          className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'students'
-              ? 'border-indigo-500 text-white'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-ink text-ink font-semibold'
+              : 'border-transparent text-muted hover:text-ink'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
           <span>Enrolled Students</span>
-          <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-800 text-gray-300">
+          <span className="px-1.5 py-0.5 text-xs rounded-full bg-paper border border-border text-muted tabular-nums">
             {enrollmentsCount || 0}
           </span>
         </button>
@@ -400,8 +400,8 @@ export default function CourseDetailsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">Course Outcomes</h2>
-              <p className="text-xs text-gray-400">Define course-level learning outcomes with target attainment and Bloom taxonomy levels.</p>
+              <h2 className="font-serif text-base font-semibold text-ink">Course Outcomes</h2>
+              <p className="text-xs text-muted">Define course-level learning outcomes with target attainment and Bloom taxonomy levels.</p>
             </div>
             <PrimaryButton onClick={() => setCoModal({ open: true, co: null })}>
               <Plus className="w-4 h-4" /> Add CO
@@ -415,27 +415,31 @@ export default function CourseDetailsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 w-20">Code</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Outcome Statement</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 w-36">Bloom Level</th>
-                      <th className="text-center text-xs font-semibold text-gray-400 uppercase px-4 py-3 w-28">Target Marks</th>
-                      <th className="text-center text-xs font-semibold text-gray-400 uppercase px-4 py-3 w-28">Attainment Goal</th>
+                    <tr className="border-b border-border bg-paper/50">
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 w-20">Code</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Outcome Statement</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 w-36">Bloom Level</th>
+                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-28">Target Marks</th>
+                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-28">Attainment Goal</th>
                       <th className="px-4 py-3 w-24" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {cos.map((co) => (
-                      <tr key={co._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="px-4 py-3 font-mono font-bold text-indigo-400 text-xs">{co.code}</td>
-                        <td className="px-4 py-3 text-white font-medium leading-relaxed">{co.statement}</td>
+                      <tr key={co._id} className="hover:bg-paper/60 transition-colors">
                         <td className="px-4 py-3">
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 font-medium">
+                          <span className="font-mono font-bold text-ink text-xs bg-paper px-2 py-0.5 rounded border border-border inline-block">
+                            {co.code}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-ink font-medium leading-relaxed">{co.statement}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-medium">
                             {co.bloomLevel}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-gray-300 font-mono text-xs">{co.targetMarksPercentage}%</td>
-                        <td className="px-4 py-3 text-center text-emerald-400 font-mono text-xs font-semibold">{co.targetAttainmentPercentage}%</td>
+                        <td className="px-4 py-3 text-center text-muted font-mono text-xs tabular-nums">{co.targetMarksPercentage}%</td>
+                        <td className="px-4 py-3 text-center text-status-attained font-mono text-xs font-semibold tabular-nums">{co.targetAttainmentPercentage}%</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1.5 justify-end">
                             <GhostButton onClick={() => setCoModal({ open: true, co })}>
@@ -461,8 +465,8 @@ export default function CourseDetailsPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">Course Assessments & Marks</h2>
-              <p className="text-xs text-gray-400">Configure tests, map question-level marks to COs, and enter student marks.</p>
+              <h2 className="font-serif text-base font-semibold text-ink">Course Assessments & Marks</h2>
+              <p className="text-xs text-muted">Configure tests, map question-level marks to COs, and enter student marks.</p>
             </div>
             <PrimaryButton onClick={() => setAssessmentModal({ open: true, assessment: null })}>
               <Plus className="w-4 h-4" /> New Assessment
@@ -480,20 +484,20 @@ export default function CourseDetailsPage() {
                 return (
                   <div
                     key={ass._id}
-                    className="rounded-xl border border-gray-800 bg-gray-900/60 overflow-hidden shadow-lg transition-all"
+                    className="rounded-2xl border border-border bg-surface overflow-hidden shadow-card transition-all"
                   >
                     {/* Assessment Card Header */}
-                    <div className="border-b border-gray-800/80 bg-gray-850/50 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="border-b border-border bg-paper/60 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <h3 className="text-lg font-bold text-white tracking-tight">{ass.name}</h3>
-                          <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-medium capitalize">
+                          <h3 className="font-serif text-lg font-bold text-ink tracking-tight">{ass.name}</h3>
+                          <span className="text-xs px-2 py-0.5 rounded bg-surface border border-border text-muted font-medium capitalize">
                             {ass.type.replace('_', ' ')}
                           </span>
-                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/30 font-semibold font-mono">
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-semibold font-mono tabular-nums">
                             Max Marks: {ass.maxMarks}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-muted tabular-nums">
                             Weightage: {ass.weightage}x
                           </span>
                         </div>
@@ -501,14 +505,14 @@ export default function CourseDetailsPage() {
                         {/* Marks Status Pill */}
                         <div className="flex items-center gap-2 pt-1">
                           {isMismatch ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30">
-                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-status-borderline-soft text-status-borderline border border-amber-200">
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-status-borderline" />
                               <span>{ass.warning}</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                              <span>Total marks configured: {ass.questionMarksSum} / {ass.maxMarks}</span>
+                            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-status-attained-soft text-status-attained border border-emerald-200">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-status-attained" />
+                              <span className="tabular-nums">Total marks configured: {ass.questionMarksSum} / {ass.maxMarks}</span>
                             </span>
                           )}
                         </div>
@@ -518,7 +522,7 @@ export default function CourseDetailsPage() {
                       <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
                         <button
                           onClick={() => setMarksModal({ open: true, assessment: ass })}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-accent bg-accent-soft hover:bg-teal-100 border border-teal-200 transition-colors cursor-pointer"
                         >
                           <FileSpreadsheet className="w-3.5 h-3.5" />
                           <span>Marks Grid</span>
@@ -540,35 +544,35 @@ export default function CourseDetailsPage() {
                     {/* Questions Table */}
                     <div className="p-4 sm:p-5">
                       {!ass.questions || ass.questions.length === 0 ? (
-                        <div className="text-center py-6 text-xs text-gray-500">
+                        <div className="text-center py-6 text-xs text-muted">
                           No questions added yet. Click &quot;Add Question&quot; above to configure Question→CO mappings.
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="border-b border-gray-800 text-xs text-gray-400 uppercase">
+                              <tr className="border-b border-border bg-paper/30 text-xs text-muted uppercase">
                                 <th className="text-left py-2 px-3 w-28">Label</th>
                                 <th className="text-left py-2 px-3 w-28">Marks</th>
                                 <th className="text-left py-2 px-3">Mapped Course Outcome</th>
                                 <th className="py-2 px-3 w-24 text-right">Actions</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-800/40">
+                            <tbody className="divide-y divide-border">
                               {ass.questions.map((q) => (
-                                <tr key={q._id} className="hover:bg-gray-800/20">
-                                  <td className="py-2.5 px-3 font-mono font-bold text-white text-xs">
+                                <tr key={q._id} className="hover:bg-paper/40 transition-colors">
+                                  <td className="py-2.5 px-3 font-mono font-bold text-ink text-xs">
                                     {q.label}
                                   </td>
-                                  <td className="py-2.5 px-3 font-mono font-semibold text-indigo-400 text-xs">
+                                  <td className="py-2.5 px-3 font-mono font-semibold text-muted text-xs tabular-nums">
                                     {q.maxMarks} marks
                                   </td>
                                   <td className="py-2.5 px-3">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 shrink-0">
+                                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-accent-soft text-accent border border-teal-200 shrink-0">
                                         {q.co?.code || '—'}
                                       </span>
-                                      <span className="text-xs text-gray-300 line-clamp-1">
+                                      <span className="text-xs text-muted line-clamp-1">
                                         {q.co?.statement}
                                       </span>
                                     </div>
@@ -605,8 +609,8 @@ export default function CourseDetailsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h2 className="text-base font-semibold text-white">Enrolled Students</h2>
-              <p className="text-xs text-gray-400">View active course enrollments, enroll single students, or bulk enroll via roll numbers.</p>
+              <h2 className="font-serif text-base font-semibold text-ink">Enrolled Students</h2>
+              <p className="text-xs text-muted">View active course enrollments, enroll single students, or bulk enroll via roll numbers.</p>
             </div>
             <div className="flex items-center gap-2">
               <GhostButton onClick={() => setBulkEnrollModal({ open: true })}>
@@ -627,7 +631,7 @@ export default function CourseDetailsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-400 uppercase">
+                    <tr className="border-b border-border bg-paper/50 text-xs text-muted uppercase">
                       <th className="py-3 px-4 text-left w-32">Roll Number</th>
                       <th className="py-3 px-4 text-left">Student Name</th>
                       <th className="py-3 px-4 text-left hidden sm:table-cell">Email</th>
@@ -635,20 +639,22 @@ export default function CourseDetailsPage() {
                       <th className="py-3 px-4 text-right w-20">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {enrollments.map((e) => (
-                      <tr key={e._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-indigo-300 text-xs">
-                          {e.student?.rollNo || '—'}
+                      <tr key={e._id} className="hover:bg-paper/60 transition-colors">
+                        <td className="py-3 px-4">
+                          <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block tabular-nums">
+                            {e.student?.rollNo || '—'}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 font-medium text-white">
+                        <td className="py-3 px-4 font-medium text-ink">
                           {e.student?.name || '—'}
                         </td>
-                        <td className="py-3 px-4 text-gray-400 text-xs hidden sm:table-cell">
+                        <td className="py-3 px-4 text-muted text-xs hidden sm:table-cell">
                           {e.student?.email}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 capitalize">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-status-attained-soft text-status-attained border border-emerald-200 capitalize font-medium">
                             {e.status}
                           </span>
                         </td>
@@ -775,14 +781,14 @@ function COFormModal({ open, co, onClose, onSave }) {
           required
         />
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Outcome Statement *</label>
+          <label className="block text-xs font-medium text-muted mb-1">Outcome Statement *</label>
           <textarea
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
             rows={3}
             required
             placeholder="Describe what students will be able to do..."
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
           />
         </div>
         <FormSelect
@@ -924,7 +930,7 @@ function QuestionFormModal({ open, assessment, question, cos, onClose, onSave })
     return (
       <Modal open={open} onClose={onClose} title="Course Outcomes Required">
         <div className="space-y-4 py-2">
-          <p className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+          <p className="text-sm text-status-borderline bg-status-borderline-soft border border-amber-200 rounded-lg p-3">
             Please define at least one Course Outcome (CO) for this course before creating questions.
           </p>
           <div className="flex justify-end">
@@ -1007,7 +1013,7 @@ function EnrollStudentModal({ open, students, enrolledIds, onClose, onEnroll }) 
     <Modal open={open} onClose={onClose} title="Enroll Student">
       <form onSubmit={handleSubmit} className="space-y-4">
         {eligibleStudents.length === 0 ? (
-          <p className="text-xs text-gray-400">All registered students are already enrolled in this course.</p>
+          <p className="text-xs text-muted">All registered students are already enrolled in this course.</p>
         ) : (
           <FormSelect
             label="Select Student *"
@@ -1039,18 +1045,18 @@ function BulkEnrollModal({ open, onClose, onBulkEnroll }) {
   return (
     <Modal open={open} onClose={onClose} title="Bulk Enroll Students">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted">
           Enter roll numbers separated by commas or new lines. Duplicate enrollments will be skipped automatically.
         </p>
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Roll Numbers *</label>
+          <label className="block text-xs font-medium text-muted mb-1">Roll Numbers *</label>
           <textarea
             value={rollNumbersText}
             onChange={(e) => setRollNumbersText(e.target.value)}
             rows={5}
             placeholder="22IT001&#10;22IT002&#10;22IT003"
             required
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg p-3 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+            className="w-full bg-surface border border-border rounded-lg p-3 text-xs font-mono text-ink placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
           />
         </div>
         <div className="flex justify-end gap-2 pt-2">

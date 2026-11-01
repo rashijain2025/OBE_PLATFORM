@@ -187,25 +187,25 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-6xl max-h-[92vh] bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-ink/40 backdrop-blur-xs animate-fadeIn">
+      <div className="relative w-full max-w-6xl max-h-[92vh] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-paper/60">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2 rounded-lg bg-accent-soft border border-teal-200 text-accent">
               <Table className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-lg font-bold text-ink font-serif tracking-tight flex items-center gap-2">
                 <span>Marks Entry Grid</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/30 font-medium">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-medium">
                   {assessment?.name}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400">
+                <span className="text-xs px-2 py-0.5 rounded bg-surface border border-border text-muted tabular-nums">
                   Max Marks: {assessment?.maxMarks}
                 </span>
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 Saved at question level · Empty cells represent not evaluated / absent
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+              className="text-muted hover:text-ink p-1.5 rounded-lg hover:bg-paper transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -222,12 +222,12 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
         </div>
 
         {/* Action & Info Bar */}
-        <div className="px-6 py-3 border-b border-gray-800 bg-gray-900/50 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-4 text-gray-400">
-            <span>Enrolled Students: <strong className="text-white">{students.length}</strong></span>
-            <span>Questions: <strong className="text-white">{questions.length}</strong></span>
+        <div className="px-6 py-3 border-b border-border bg-surface flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-4 text-muted">
+            <span>Enrolled Students: <strong className="text-ink tabular-nums">{students.length}</strong></span>
+            <span>Questions: <strong className="text-ink tabular-nums">{questions.length}</strong></span>
             {validationErrors.length > 0 && (
-              <span className="text-rose-400 flex items-center gap-1">
+              <span className="text-status-below flex items-center gap-1 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {validationErrors.length} invalid mark(s)
               </span>
@@ -254,38 +254,38 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
               <Spinner />
             </div>
           ) : students.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <Info className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+            <div className="text-center py-16 text-muted">
+              <Info className="w-8 h-8 text-muted/60 mx-auto mb-2" />
               <p>No students enrolled in this course yet.</p>
-              <p className="text-xs text-gray-500 mt-1">Enroll students into the course to enter marks.</p>
+              <p className="text-xs text-muted/70 mt-1">Enroll students into the course to enter marks.</p>
             </div>
           ) : questions.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <Info className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+            <div className="text-center py-16 text-muted">
+              <Info className="w-8 h-8 text-muted/60 mx-auto mb-2" />
               <p>No questions configured for this assessment.</p>
-              <p className="text-xs text-gray-500 mt-1">Add questions to this assessment before recording marks.</p>
+              <p className="text-xs text-muted/70 mt-1">Add questions to this assessment before recording marks.</p>
             </div>
           ) : (
-            <div className="border border-gray-800 rounded-xl overflow-hidden shadow-inner">
+            <div className="border border-border rounded-xl overflow-hidden shadow-xs bg-surface">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-950/80 border-b border-gray-800 text-gray-400 uppercase tracking-wider sticky top-0 z-10">
+                  <tr className="bg-paper border-b border-border text-muted uppercase tracking-wider sticky top-0 z-10">
                     <th className="py-3 px-3 w-28 font-semibold">Roll No</th>
                     <th className="py-3 px-3 w-48 font-semibold">Student Name</th>
                     {questions.map((q) => (
                       <th key={q._id} className="py-3 px-2 text-center w-24">
-                        <div className="font-bold text-white text-xs">{q.label}</div>
-                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">Max {q.maxMarks}</div>
-                        <div className="text-[10px] text-purple-400 font-mono">{q.co?.code}</div>
+                        <div className="font-bold text-ink text-xs">{q.label}</div>
+                        <div className="text-[10px] text-muted font-mono mt-0.5 tabular-nums">Max {q.maxMarks}</div>
+                        <div className="text-[10px] text-accent font-mono font-semibold">{q.co?.code}</div>
                       </th>
                     ))}
-                    <th className="py-3 px-3 text-center w-28 font-semibold text-emerald-400">
+                    <th className="py-3 px-3 text-center w-28 font-semibold text-status-attained">
                       Total ({assessment?.maxMarks})
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/60 bg-gray-900/40">
-                  {students.map((s, sIdx) => {
+                <tbody className="divide-y divide-border bg-surface">
+                  {students.map((s) => {
                     // Compute total marks obtained for this student
                     let totalObtained = 0;
                     let hasAnyMark = false;
@@ -301,11 +301,11 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
                     }
 
                     return (
-                      <tr key={s._id} className="hover:bg-gray-800/30 transition-colors">
-                        <td className="py-2 px-3 font-mono font-bold text-indigo-300">
+                      <tr key={s._id} className="hover:bg-paper/60 transition-colors">
+                        <td className="py-2 px-3 font-mono font-semibold text-ink tabular-nums">
                           {s.rollNo || '—'}
                         </td>
-                        <td className="py-2 px-3 font-medium text-white truncate max-w-[12rem]">
+                        <td className="py-2 px-3 font-medium text-ink truncate max-w-[12rem]">
                           {s.name}
                         </td>
                         {questions.map((q) => {
@@ -324,24 +324,24 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
                                 placeholder="—"
                                 value={val}
                                 onChange={(e) => handleCellChange(s._id, q._id, e.target.value)}
-                                className={`w-16 text-center text-xs font-mono font-semibold py-1 px-1 rounded-md bg-gray-950 border transition-all focus:outline-none focus:ring-1 ${
+                                className={`w-16 text-center text-xs font-mono font-semibold py-1 px-1 rounded-md transition-all focus:outline-none focus:ring-1 tabular-nums ${
                                   isInvalid
-                                    ? 'border-rose-500 bg-rose-950/20 text-rose-300 focus:ring-rose-500'
+                                    ? 'border border-status-below bg-status-below-soft text-status-below focus:ring-status-below'
                                     : val !== ''
-                                    ? 'border-indigo-500/40 text-emerald-300 focus:ring-indigo-500'
-                                    : 'border-gray-800 text-gray-400 focus:ring-indigo-500'
+                                    ? 'border border-border bg-surface text-ink font-bold focus:border-accent focus:ring-accent'
+                                    : 'cell-not-evaluated border border-border/80 text-muted focus:border-accent focus:ring-accent'
                                 }`}
                               />
                             </td>
                           );
                         })}
-                        <td className="py-2 px-3 text-center font-mono font-bold">
+                        <td className="py-2 px-3 text-center font-mono font-bold tabular-nums">
                           {hasAnyMark ? (
-                            <span className="text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                            <span className="text-status-attained px-2 py-0.5 rounded bg-status-attained-soft border border-emerald-200">
                               {Number(totalObtained.toFixed(2))}
                             </span>
                           ) : (
-                            <span className="text-gray-500">—</span>
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                       </tr>
@@ -354,8 +354,8 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 bg-gray-950/60">
-          <div className="text-xs text-gray-500">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-paper/60">
+          <div className="text-xs text-muted">
             Tip: Press Tab to move across question cells quickly.
           </div>
           <div className="flex gap-2">
@@ -369,22 +369,22 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
 
       {/* ─── CSV Import Submodal ─────────────────────────────────────────────── */}
       {csvModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80">
-          <div className="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-xs">
+          <div className="w-full max-w-xl bg-surface border border-border rounded-xl p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+              <h3 className="font-serif text-base font-bold text-ink flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-accent" />
                 <span>Import Marks via CSV</span>
               </h3>
               <button
                 onClick={() => setCsvModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-muted hover:text-ink cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               CSV must have headers matching the student roll number and question labels (e.g. <code>RollNo,{questions.map((q) => q.label).join(',')}</code>).
             </p>
 
@@ -399,7 +399,7 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
               <GhostButton onClick={() => fileInputRef.current?.click()}>
                 <Upload className="w-3.5 h-3.5" /> Upload .csv File
               </GhostButton>
-              <span className="text-xs text-gray-500">or paste CSV text below:</span>
+              <span className="text-xs text-muted">or paste CSV text below:</span>
             </div>
 
             <textarea
@@ -407,7 +407,7 @@ export default function MarksGridModal({ open, assessment, onClose, showToast })
               onChange={(e) => setCsvText(e.target.value)}
               placeholder={`RollNo,${questions.map((q) => q.label).join(',')}\n22IT001,${questions.map((q) => q.maxMarks).join(',')}\n22IT002,...`}
               rows={6}
-              className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-surface border border-border rounded-lg p-3 text-xs font-mono text-ink placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             />
 
             <div className="flex justify-end gap-2 pt-2">

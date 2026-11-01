@@ -96,14 +96,14 @@ export default function COAttainmentPage() {
               <a
                 href={exportAttainmentCSVUrl(selectedCourseId, target)}
                 download
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-accent bg-accent-soft hover:bg-teal-100 border border-teal-200 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Export CSV</span>
               </a>
               <Link
                 to={`/reports?courseId=${selectedCourseId}&target=${target}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-indigo-300 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-ink bg-paper hover:bg-border/40 border border-border transition-colors"
               >
                 <BarChart3 className="w-3.5 h-3.5" />
                 <span>Reports & Charts</span>
@@ -115,7 +115,7 @@ export default function COAttainmentPage() {
 
       {/* Course & Target Selector Card */}
       <Card>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="md:col-span-2">
             <FormSelect
               label="Select Course"
@@ -134,9 +134,9 @@ export default function COAttainmentPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1 flex items-center justify-between">
+            <label className="block text-xs font-medium text-muted mb-1 flex items-center justify-between">
               <span>Target Attainment Threshold (%)</span>
-              <span className="text-gray-500 text-[10px]">Default 40%</span>
+              <span className="text-muted/70 text-[10px]">Default 40%</span>
             </label>
             <div className="relative">
               <input
@@ -149,9 +149,9 @@ export default function COAttainmentPage() {
                   setTarget(val);
                   setSearchParams({ courseId: selectedCourseId, target: String(val) });
                 }}
-                className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-ink font-mono focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors tabular-nums"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-gray-500">%</span>
+              <span className="absolute right-3 top-2.5 text-xs text-muted">%</span>
             </div>
           </div>
         </div>
@@ -170,52 +170,52 @@ export default function COAttainmentPage() {
         <>
           {/* Summary Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Enrolled</div>
-              <div className="text-2xl font-bold text-white mt-1">{data.totalEnrolledStudents}</div>
-              <div className="text-[11px] text-gray-500 mt-0.5">Active students</div>
+            <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Total Enrolled</div>
+              <div className="text-2xl font-bold text-ink font-serif mt-1 tabular-nums">{data.totalEnrolledStudents}</div>
+              <div className="text-[11px] text-muted mt-0.5">Active students</div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Evaluated COs</div>
-              <div className="text-2xl font-bold text-indigo-400 mt-1">
+            <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Evaluated COs</div>
+              <div className="text-2xl font-bold text-accent font-serif mt-1 tabular-nums">
                 {data.evaluatedCOsCount} / {data.totalCourseOutcomes}
               </div>
-              <div className="text-[11px] text-gray-500 mt-0.5">Configured with marks</div>
+              <div className="text-[11px] text-muted mt-0.5">Configured with marks</div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Attained COs</div>
-              <div className="text-2xl font-bold text-emerald-400 mt-1">{data.attainedCOsCount}</div>
-              <div className="text-[11px] text-emerald-500/70 mt-0.5">≥ {target}% target</div>
+            <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Attained COs</div>
+              <div className="text-2xl font-bold text-status-attained font-serif mt-1 tabular-nums">{data.attainedCOsCount}</div>
+              <div className="text-[11px] text-status-attained/80 mt-0.5">≥ {target}% target</div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Below Target</div>
-              <div className="text-2xl font-bold text-amber-400 mt-1">{data.belowTargetCOsCount}</div>
-              <div className="text-[11px] text-amber-500/70 mt-0.5">&lt; {target}% target</div>
+            <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Below Target</div>
+              <div className="text-2xl font-bold text-status-borderline font-serif mt-1 tabular-nums">{data.belowTargetCOsCount}</div>
+              <div className="text-[11px] text-status-borderline/80 mt-0.5">&lt; {target}% target</div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Average Attainment</div>
-              <div className="text-2xl font-bold text-purple-400 mt-1">
+            <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Average Attainment</div>
+              <div className="text-2xl font-bold text-ink font-serif mt-1 tabular-nums">
                 {data.averageAttainment !== null ? `${data.averageAttainment}%` : '—'}
               </div>
-              <div className="text-[11px] text-purple-400/70 mt-0.5 capitalize">{data.overallStatus}</div>
+              <div className="text-[11px] text-muted mt-0.5 capitalize">{data.overallStatus}</div>
             </div>
           </div>
 
           {/* Below-Target Banner if any */}
           {data.belowTargetCOsCount > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="rounded-xl border border-amber-200 bg-status-borderline-soft p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-status-borderline shrink-0 mt-0.5" />
               <div className="text-sm">
-                <div className="font-semibold text-amber-300">
+                <div className="font-semibold text-amber-900">
                   {data.belowTargetCOsCount} Course Outcome(s) below target threshold ({target}%):
                 </div>
-                <div className="text-xs text-amber-200/80 mt-1 flex flex-wrap gap-2">
+                <div className="text-xs text-amber-800 mt-1 flex flex-wrap gap-2">
                   {data.belowTargetCOs.map((b) => (
-                    <span key={b.coId} className="px-2 py-0.5 rounded bg-amber-500/20 font-mono">
+                    <span key={b.coId} className="px-2 py-0.5 rounded bg-surface border border-amber-200 font-mono tabular-nums">
                       {b.code} ({b.classAttainment}%, Gap: -{b.gap}%)
                     </span>
                   ))}
@@ -225,25 +225,24 @@ export default function COAttainmentPage() {
           )}
 
           {/* View Tabs */}
-          <div className="flex border-b border-gray-800 gap-4">
+          <div className="flex border-b border-border gap-4">
             <button
               onClick={() => setActiveTab('class')}
-              className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+              className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
                 activeTab === 'class'
-                  ? 'border-indigo-500 text-white'
-                  : 'border-transparent text-gray-400 hover:text-gray-300'
+                  ? 'border-ink text-ink font-semibold'
+                  : 'border-transparent text-muted hover:text-ink'
               }`}
             >
               <Award className="w-4 h-4" />
               <span>Class-Wise Attainment</span>
             </button>
-
             <button
               onClick={() => setActiveTab('student')}
-              className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+              className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
                 activeTab === 'student'
-                  ? 'border-indigo-500 text-white'
-                  : 'border-transparent text-gray-400 hover:text-gray-300'
+                  ? 'border-ink text-ink font-semibold'
+                  : 'border-transparent text-muted hover:text-ink'
               }`}
             >
               <Table className="w-4 h-4" />
@@ -257,7 +256,7 @@ export default function COAttainmentPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-400 uppercase tracking-wider">
+                    <tr className="border-b border-border bg-paper/50 text-xs text-muted uppercase tracking-wider">
                       <th className="py-3 px-4 text-left w-20">Code</th>
                       <th className="py-3 px-4 text-left w-32">Bloom Level</th>
                       <th className="py-3 px-4 text-left">Outcome Statement</th>
@@ -267,50 +266,52 @@ export default function COAttainmentPage() {
                       <th className="py-3 px-4 text-center w-28">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {cos.map((co) => {
                       const isAttained = co.status === 'Attained';
                       const isPending = co.classAttainment === null;
 
                       return (
-                        <tr key={co.coId} className="hover:bg-gray-800/20 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-bold text-indigo-400 text-xs">
-                            {co.code}
+                        <tr key={co.coId} className="hover:bg-paper/60 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <span className="font-mono font-bold text-ink text-xs bg-paper px-2 py-0.5 rounded border border-border inline-block">
+                              {co.code}
+                            </span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-medium">
                               {co.bloomLevel}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-white text-xs leading-relaxed max-w-md">
+                          <td className="py-3.5 px-4 text-ink text-xs leading-relaxed max-w-md">
                             {co.statement}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-mono text-xs text-gray-300">
+                          <td className="py-3.5 px-4 text-center font-mono text-xs text-muted tabular-nums">
                             {co.evaluatedText}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-mono text-xs text-gray-300">
+                          <td className="py-3.5 px-4 text-center font-mono text-xs text-muted tabular-nums">
                             {co.studentsAttained} of {co.studentsEvaluated}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-mono text-xs font-bold">
+                          <td className="py-3.5 px-4 text-center font-mono text-xs font-bold tabular-nums">
                             {isPending ? (
-                              <span className="text-gray-500">—</span>
+                              <span className="text-muted">—</span>
                             ) : (
-                              <span className={isAttained ? 'text-emerald-400' : 'text-amber-400'}>
+                              <span className={isAttained ? 'text-status-attained' : 'text-status-borderline'}>
                                 {co.classAttainment}%
                               </span>
                             )}
                           </td>
                           <td className="py-3.5 px-4 text-center">
                             {isPending ? (
-                              <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400">
+                              <span className="text-xs px-2 py-0.5 rounded bg-paper border border-border text-muted">
                                 {co.status}
                               </span>
                             ) : isAttained ? (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold inline-flex items-center gap-1">
+                              <span className="text-xs px-2.5 py-0.5 rounded-full bg-status-attained-soft text-status-attained border border-emerald-200 font-semibold inline-flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3" /> Attained
                               </span>
                             ) : (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold inline-flex items-center gap-1">
+                              <span className="text-xs px-2.5 py-0.5 rounded-full bg-status-borderline-soft text-status-borderline border border-amber-200 font-semibold inline-flex items-center gap-1">
                                 <AlertTriangle className="w-3 h-3" /> Gap: -{co.gap}%
                               </span>
                             )}
@@ -330,32 +331,32 @@ export default function COAttainmentPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-800 text-gray-400 uppercase tracking-wider">
+                    <tr className="border-b border-border bg-paper/50 text-muted uppercase tracking-wider">
                       <th className="py-3 px-3 w-28 font-semibold">Roll No</th>
                       <th className="py-3 px-3 w-44 font-semibold">Student Name</th>
                       {cos.map((co) => (
                         <th key={co.coId} className="py-3 px-3 text-center w-28">
-                          <div className="font-bold text-white text-xs">{co.code}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">Goal ≥ {target}%</div>
+                          <div className="font-bold text-ink text-xs">{co.code}</div>
+                          <div className="text-[10px] text-muted font-mono tabular-nums">Goal ≥ {target}%</div>
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/60">
+                  <tbody className="divide-y divide-border">
                     {studentMatrix.map((s) => (
-                      <tr key={s.studentId} className="hover:bg-gray-800/20 transition-colors">
-                        <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">
+                      <tr key={s.studentId} className="hover:bg-paper/60 transition-colors">
+                        <td className="py-2.5 px-3 font-mono font-semibold text-ink tabular-nums">
                           {s.rollNo || '—'}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-white truncate max-w-[12rem]">
+                        <td className="py-2.5 px-3 font-medium text-ink truncate max-w-[12rem]">
                           {s.name}
                         </td>
                         {cos.map((co) => {
                           const score = s.coScores[co.code];
                           if (!score || !score.isEvaluated) {
                             return (
-                              <td key={co.coId} className="py-2 px-3 text-center text-gray-500 font-mono text-[11px]">
-                                <span className="px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-400">
+                              <td key={co.coId} className="py-2 px-3 text-center text-muted font-mono text-[11px]">
+                                <span className="px-1.5 py-0.5 rounded bg-paper border border-border text-muted">
                                   Not Eval
                                 </span>
                               </td>
@@ -365,10 +366,10 @@ export default function COAttainmentPage() {
                           return (
                             <td key={co.coId} className="py-2 px-3 text-center">
                               <span
-                                className={`inline-block font-mono text-xs font-bold px-2 py-0.5 rounded ${
+                                className={`inline-block font-mono text-xs font-bold px-2 py-0.5 rounded tabular-nums ${
                                   score.isAttained
-                                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                                    : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                                    ? 'bg-status-attained-soft text-status-attained border border-emerald-200'
+                                    : 'bg-status-below-soft text-status-below border border-red-200'
                                 }`}
                               >
                                 {score.percentage}%
