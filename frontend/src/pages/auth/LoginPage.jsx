@@ -48,193 +48,165 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background text-gray-900">
-      {/* Left panel: Navy with dot pattern, tagline, and brand identity */}
-      <div className="hidden lg:flex lg:w-5/12 bg-ink text-white relative flex-col justify-between p-12 overflow-hidden">
-        {/* Subtle dot pattern background */}
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{
-            backgroundImage: 'radial-gradient(circle, #FFFFFF 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
+    <div className="min-h-screen flex flex-col justify-between items-center p-4 sm:p-8 bg-background text-gray-900">
+      {/* Top bar with Back to Home */}
+      <div className="w-full max-w-md flex items-center justify-between py-2">
+        <Link
+          to="/"
+          className="text-xs font-medium text-muted hover:text-accent transition-colors flex items-center gap-1.5"
+        >
+          &larr; Back to Home
+        </Link>
+        <span className="text-xs text-muted/70">MITS Gwalior</span>
+      </div>
 
-        <div className="relative z-10">
-          <Link to="/" className="inline-flex items-center gap-3 group" title="Back to Homepage">
-            <div className="w-11 h-11 rounded-full bg-white p-1 flex items-center justify-center shadow-md ring-2 ring-white/20">
+      {/* Main Login Card Container */}
+      <div className="w-full max-w-md my-auto">
+        {/* Brand Header */}
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block group">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white p-2 mb-3 shadow-md border border-border group-hover:scale-105 transition-transform">
               <img
                 src="/mits_logo.png"
                 alt="MITS Gwalior Logo"
-                className="w-8 h-8 object-contain"
+                className="w-12 h-12 object-contain"
               />
             </div>
-            <div>
-              <div className="font-serif text-xl font-bold tracking-tight text-white group-hover:text-accent transition-colors">OBE Platform</div>
-              <div className="text-xs text-gray-300">MITS Gwalior</div>
-            </div>
+            <h1 className="font-serif text-2xl font-bold text-ink group-hover:text-accent transition-colors">
+              OBE Platform
+            </h1>
+            <p className="text-muted text-xs mt-1">
+              Madhav Institute of Technology &amp; Science, Gwalior
+            </p>
           </Link>
         </div>
 
-        <div className="relative z-10 my-auto py-12">
-          <div className="inline-block px-3 py-1 rounded-full bg-white/10 text-accent text-xs font-medium tracking-wide uppercase mb-4 border border-white/10">
-            Institutional Excellence
+        {/* Login Card */}
+        <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8 shadow-card">
+          <h2 className="font-serif text-xl sm:text-2xl font-bold text-ink mb-1">
+            Sign in to your account
+          </h2>
+          <p className="text-muted text-xs sm:text-sm mb-6">
+            Enter your institutional credentials to continue
+          </p>
+
+          {errorMessage && (
+            <div className="mb-5 p-3.5 rounded-lg bg-status-below-soft border border-status-below/20 flex items-start gap-3 text-status-below text-sm">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-muted absolute left-3 top-3.5" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@obe.edu"
+                  required
+                  className="w-full rounded-lg bg-surface border border-border pl-10 pr-4 py-2.5 text-gray-900 placeholder:text-muted/60 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-muted absolute left-3 top-3.5" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  className="w-full rounded-lg bg-surface border border-border pl-10 pr-4 py-2.5 text-gray-900 placeholder:text-muted/60 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full mt-2 py-2.5 px-4 rounded-lg bg-ink hover:bg-ink-dark text-white font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              {submitting ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Fill Demo Accounts */}
+          <div className="mt-6 pt-5 border-t border-border">
+            <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2.5 text-center">
+              Quick Fill Seeded Roles (Password@123)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.role}
+                  type="button"
+                  onClick={() => handleQuickFill(acc.email)}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all hover:shadow-xs active:scale-95 text-center cursor-pointer ${acc.color}`}
+                >
+                  {acc.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <h1 className="font-serif text-4xl xl:text-5xl font-bold leading-tight text-white mb-6">
-            Measure outcomes, not just marks.
-          </h1>
-          <p className="text-gray-300 text-base max-w-md leading-relaxed">
-            Continuous curriculum alignment, attainment analytics, and NBA/NAAC-ready compliance intelligence.
+        </div>
+      </div>
+
+      {/* Footer Credits */}
+      <footer className="w-full max-w-md py-4 text-center text-xs text-muted mt-6">
+        <div className="space-y-1">
+          <p className="text-muted/80">
+            &copy; 2026 MITS Gwalior Outcome Based Education Platform
+          </p>
+          <p className="text-muted">
+            Made by{' '}
+            <a
+              href="https://rashijportfolio.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#7B112B] hover:underline"
+            >
+              Rashi Jain
+            </a>
+            {' '}&amp;{' '}
+            <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
+          </p>
+          <p className="text-muted">
+            Under the Guidance of{' '}
+            <a
+              href="https://web.mitsgwalior.in/faculty-profiles-it-2/neha-bhardwaj"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#7B112B] hover:underline"
+            >
+              Neha Bhardwaj
+            </a>
+          </p>
+          <p className="text-muted/70 text-[11px] font-medium tracking-wide">
+            Powered by <span className="font-semibold text-ink">IT Department</span>
           </p>
         </div>
-
-        <div className="relative z-10 text-xs text-gray-400 border-t border-white/10 pt-4 flex justify-between items-center">
-          <Link to="/" className="text-accent hover:underline flex items-center gap-1">
-            &larr; Back to Home
-          </Link>
-          <span>Tier-1 / Tier-2 Aligned</span>
-        </div>
-      </div>
-
-      {/* Right panel: Login card on warm paper background */}
-      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative">
-        {/* Mobile brand header */}
-        <div className="lg:hidden text-center mb-8">
-          <Link to="/" className="inline-block">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white p-1.5 mb-3 shadow-md border border-border">
-              <img
-                src="/mits_logo.png"
-                alt="MITS Gwalior Logo"
-                className="w-11 h-11 object-contain"
-              />
-            </div>
-            <h1 className="font-serif text-2xl font-bold text-ink">OBE Platform</h1>
-            <p className="text-muted text-xs mt-1">Madhav Institute of Technology &amp; Science, Gwalior</p>
-          </Link>
-        </div>
-
-        <div className="w-full max-w-md">
-          {/* Login Card */}
-          <div className="bg-surface rounded-2xl border border-border p-8 shadow-card">
-            <h2 className="font-serif text-2xl font-bold text-ink mb-1">Sign in to your account</h2>
-            <p className="text-muted text-sm mb-6">Enter your institutional credentials to continue</p>
-
-            {errorMessage && (
-              <div className="mb-5 p-3.5 rounded-lg bg-status-below-soft border border-status-below/20 flex items-start gap-3 text-status-below text-sm">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-muted absolute left-3 top-3.5" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@obe.edu"
-                    required
-                    className="w-full rounded-lg bg-surface border border-border pl-10 pr-4 py-2.5 text-gray-900 placeholder:text-muted/60 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-muted absolute left-3 top-3.5" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    required
-                    className="w-full rounded-lg bg-surface border border-border pl-10 pr-4 py-2.5 text-gray-900 placeholder:text-muted/60 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full mt-2 py-2.5 px-4 rounded-lg bg-ink hover:bg-ink-dark text-white font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {submitting ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Quick Fill Demo Accounts */}
-            <div className="mt-8 pt-6 border-t border-border">
-              <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 text-center">
-                Quick Fill Seeded Roles (Password@123)
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {demoAccounts.map((acc) => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => handleQuickFill(acc.email)}
-                    className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all hover:shadow-xs active:scale-95 text-center cursor-pointer ${acc.color}`}
-                  >
-                    {acc.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer Credits */}
-            <div className="mt-8 pt-4 border-t border-border/60 text-center text-xs text-muted">
-              <p className="text-muted/80">
-                &copy; 2026 MITS Gwalior Outcome Based Education Platform
-              </p>
-              <p className="mt-1 text-muted">
-                Made by{' '}
-                <a
-                  href="https://rashijportfolio.vercel.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-[#7B112B] hover:underline"
-                >
-                  Rashi Jain
-                </a>
-                {' '}&amp;{' '}
-                <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
-              </p>
-              <p className="mt-1 text-muted">
-                Under the Guidance of{' '}
-                <a
-                  href="https://web.mitsgwalior.in/faculty-profiles-it-2/neha-bhardwaj"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-[#7B112B] hover:underline"
-                >
-                  Neha Bhardwaj
-                </a>
-              </p>
-              <p className="mt-1 text-muted/70 text-[11px] font-medium tracking-wide">
-                Powered by <span className="font-semibold text-ink">IT Department</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }
