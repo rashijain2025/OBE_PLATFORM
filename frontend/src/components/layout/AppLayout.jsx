@@ -189,6 +189,9 @@ export default function AppLayout() {
                 {' '}under{' '}
                 <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
               </p>
+              <p className="text-muted/70 text-[11px] font-medium tracking-wide">
+                Powered by <span className="font-semibold text-ink">IT Department</span>
+              </p>
             </div>
           </footer>
         </div>
