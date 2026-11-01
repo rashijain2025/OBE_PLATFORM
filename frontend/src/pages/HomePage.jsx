@@ -9,7 +9,6 @@ import {
   Users,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -147,7 +146,7 @@ export default function HomePage() {
         </div>
 
         {/* Action Callout */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+        <div className="mt-10 flex flex-col items-center">
           <Link
             to={isAuthenticated ? "/dashboard" : "/login"}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold text-sm shadow-xl transition-all hover:translate-y-[-1px]"
@@ -155,10 +154,6 @@ export default function HomePage() {
             <span>{isAuthenticated ? 'Open Dashboard' : 'Sign in to OBE Portal'}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <div className="text-xs text-gray-400 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-accent" />
-            <span>Tier-1 / Tier-2 NBA Outcome Framework Aligned</span>
-          </div>
         </div>
       </main>
 
