@@ -176,7 +176,14 @@ export default function AppLayout() {
               </p>
               <p className="text-muted">
                 Made by{' '}
-                <span className="font-semibold text-[#7B112B]">Rashi Jain</span>
+                <a
+                  href="https://rashijportfolio.vercel.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[#7B112B] hover:underline"
+                >
+                  Rashi Jain
+                </a>
                 {' '}&amp;{' '}
                 <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
                 {' '}under{' '}
