@@ -204,7 +204,9 @@ export default function LoginPage() {
                 </a>
                 {' '}&amp;{' '}
                 <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
-                {' '}under the guidance of{' '}
+              </p>
+              <p className="mt-1 text-muted">
+                Under the Guidance of{' '}
                 <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
               </p>
               <p className="mt-1 text-muted/70 text-[11px] font-medium tracking-wide">

@@ -186,7 +186,9 @@ export default function AppLayout() {
                 </a>
                 {' '}&amp;{' '}
                 <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
-                {' '}under the guidance of{' '}
+              </p>
+              <p className="text-muted">
+                Under the Guidance of{' '}
                 <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
               </p>
               <p className="text-muted/70 text-[11px] font-medium tracking-wide">
