@@ -1,1 +1,76 @@
 @import "tailwindcss";
+
+@theme {
+  --color-paper: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-border: #E7E1D6;
+  --color-ink: #1B2A4A;
+  --color-ink-dark: #14203A;
+  --color-ink-foreground: #FFFFFF;
+  --color-accent: #0F9FA8;
+  --color-accent-soft: #E3F4F5;
+  --color-text-main: #1F2937;
+  --color-text-muted: #6B7280;
+  --color-status-attained: #059669;
+  --color-status-borderline: #D97706;
+  --color-status-below: #E11D48;
+
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --background: #FAF7F2;
+  --surface: #FFFFFF;
+  --border: #E7E1D6;
+  --primary: #1B2A4A;
+  --primary-dark: #14203A;
+  --primary-foreground: #FFFFFF;
+  --accent: #0F9FA8;
+  --accent-soft: #E3F4F5;
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --status-attained: #059669;
+  --status-borderline: #D97706;
+  --status-below: #E11D48;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Base Body & Typography */
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-serif);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Marks Grid: Not evaluated hatched background */
+.cell-not-evaluated {
+  background-color: #FAF7F2;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #E7E1D6,
+    #E7E1D6 4px,
+    #FAF7F2 4px,
+    #FAF7F2 8px
+  );
+  color: #9CA3AF;
+}
