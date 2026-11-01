@@ -162,10 +162,29 @@ export default function AppLayout() {
           </nav>
         </aside>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
-          <Outlet />
-        </main>
+        {/* Page Content & Footer */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+            <Outlet />
+          </main>
+
+          {/* Footer */}
+          <footer className="mt-auto border-t border-border bg-surface/50 py-4 px-6 text-center text-xs text-muted">
+            <div className="space-y-1">
+              <p className="text-muted/80">
+                &copy; 2026 MITS Gwalior Outcome Based Education Platform
+              </p>
+              <p className="text-muted">
+                Made by{' '}
+                <span className="font-semibold text-[#7B112B]">Rashi Jain</span>
+                {' '}&amp;{' '}
+                <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
+                {' '}under{' '}
+                <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
+              </p>
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );

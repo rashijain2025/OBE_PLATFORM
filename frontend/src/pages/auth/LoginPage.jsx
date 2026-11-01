@@ -186,6 +186,21 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
+
+            {/* Footer Credits */}
+            <div className="mt-8 pt-4 border-t border-border/60 text-center text-xs text-muted">
+              <p className="text-muted/80">
+                &copy; 2026 MITS Gwalior Outcome Based Education Platform
+              </p>
+              <p className="mt-1 text-muted">
+                Made by{' '}
+                <span className="font-semibold text-[#7B112B]">Rashi Jain</span>
+                {' '}&amp;{' '}
+                <span className="font-semibold text-[#7B112B]">Shashank Nigam</span>
+                {' '}under{' '}
+                <span className="font-semibold text-[#7B112B]">Neha Bhardwaj</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
