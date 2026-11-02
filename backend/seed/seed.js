@@ -14,7 +14,7 @@ const DEFAULT_PASSWORD = 'Password@123';
 
 const seedDatabase = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/obe_platform';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/obe_platform';
     console.log(`Connecting to MongoDB at: ${mongoUri}`);
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB successfully.');

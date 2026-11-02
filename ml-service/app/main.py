@@ -15,11 +15,28 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Allowed origins for ML service: backend origin from env, or local origins
+backend_origin = os.getenv("BACKEND_ORIGIN") or os.getenv("BACKEND_URL") or os.getenv("CORS_ORIGINS")
+if backend_origin:
+    allowed_origins = [o.strip() for o in backend_origin.split(",") if o.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:5001",
+        "http://127.0.0.1:5001",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+is_production = os.getenv("ENVIRONMENT") == "production" or os.getenv("NODE_ENV") == "production"
+cors_origins = allowed_origins if is_production else list(set(allowed_origins + ["*"]))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

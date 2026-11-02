@@ -77,7 +77,7 @@ export const getCoursePOAttainmentApi = async (courseId, target = 60) => {
 };
 
 export const exportProgrammeCSVUrl = (programmeId, target = 60, academicYear = '') => {
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+  const baseUrl = import.meta.env.VITE_API_URL || '/api';
   const params = new URLSearchParams();
   if (target) params.append('target', target);
   if (academicYear) params.append('academicYear', academicYear);

@@ -256,6 +256,105 @@ Demo seeded records:
 
 ---
 
+## Deployment
+
+Follow this exact deployment sequence so that dependent connection strings and URLs are available at each step.
+
+### Target Architecture
+- **Database**: MongoDB Atlas (Free M0 or higher)
+- **ML Service**: Render Web Service (Python runtime, no Docker)
+- **Backend API**: Render Web Service (Node.js runtime, no Docker)
+- **Frontend SPA**: Vercel (React + Vite, with `vercel.json` SPA rewrite)
+
+---
+
+### Step 1: MongoDB Atlas (Database)
+1. Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+2. Under **Database Access**, create a database user (e.g., `obe_admin`) with read/write privileges.
+3. Under **Network Access**, add IP `0.0.0.0/0` (allow access from anywhere) so the Render backend can connect.
+4. Click **Connect** → **Drivers** and copy the connection string.
+5. Replace `<password>` and set the database name to `obe_platform`:
+   ```
+   mongodb+srv://<username>:<password>@<cluster>.mongodb.net/obe_platform?retryWrites=true&w=majority
+   ```
+
+---
+
+### Step 2: ML Microservice (Render Web Service)
+1. In the [Render Dashboard](https://dashboard.render.com), click **New +** → **Web Service**.
+2. Connect your GitHub repository.
+3. Configure service:
+   - **Name**: `obe-ml-service`
+   - **Root Directory**: `ml-service`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Set Environment Variables:
+   | Variable | Value / Description |
+   | :--- | :--- |
+   | `PORT` | `8000` (Render will override with `$PORT`) |
+   | `ENVIRONMENT` | `production` |
+   | `BACKEND_ORIGIN` | `https://your-backend.onrender.com` *(can be updated after Step 3)* |
+5. Click **Deploy Web Service** and note your service URL (e.g., `https://obe-ml-service.onrender.com`).
+   *Note: Trained model (`models/obe_attainment_model.joblib`) and dataset (`data/synthetic_historical_data.csv`) are committed to the repo, ensuring zero-latency restarts.*
+
+---
+
+### Step 3: Backend API (Render Web Service)
+1. In Render, click **New +** → **Web Service**.
+2. Connect the same repository.
+3. Configure service:
+   - **Name**: `obe-backend`
+   - **Root Directory**: `backend`
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server.js`
+4. Set Environment Variables:
+   | Variable | Description / Example |
+   | :--- | :--- |
+   | `PORT` | `5001` (or let Render set `$PORT`) |
+   | `NODE_ENV` | `production` |
+   | `MONGO_URI` | Atlas connection string from Step 1 |
+   | `JWT_SECRET` | Strong random secret string |
+   | `JWT_EXPIRE` | `7d` |
+   | `ML_SERVICE_URL` | ML Service URL from Step 2 (e.g., `https://obe-ml-service.onrender.com`) |
+   | `ML_TIMEOUT_MS` | `60000` (prevents timeouts when free-tier ML service wakes up) |
+   | `CORS_ORIGINS` | `https://your-frontend.vercel.app,http://localhost:5173` |
+   | `FRONTEND_URL` | `https://your-frontend.vercel.app` |
+   | `ADMIN_EMAIL` | `admin@mitsgwalior.in` |
+   | `ADMIN_PASSWORD` | Strong admin password (minimum 12 characters) |
+   | `ADMIN_NAME` | `System Administrator` |
+   | `GOOGLE_CLIENT_ID` | Your Google OAuth Client ID |
+   | `ALLOWED_EMAIL_DOMAIN` | `mitsgwalior.in,gmail.com` |
+   | `ENABLE_PASSWORD_LOGIN` | `true` |
+   | `SMTP_HOST` | `smtp.gmail.com` *(optional for email invitations)* |
+   | `SMTP_PORT` | `587` |
+   | `SMTP_USER` | Your SMTP username / email |
+   | `SMTP_PASS` | Your SMTP app password |
+   | `MAIL_FROM` | `"MITS OBE Platform" <noreply@mitsgwalior.in>` |
+5. Click **Deploy Web Service** and note your backend URL (e.g., `https://obe-backend.onrender.com`).
+
+---
+
+### Step 4: Frontend (Vercel)
+1. In [Vercel](https://vercel.com), click **Add New...** → **Project**.
+2. Import your GitHub repository.
+3. Configure project settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Set Environment Variables:
+   | Variable | Description / Example |
+   | :--- | :--- |
+   | `VITE_API_URL` | Deployed backend URL + `/api` (e.g., `https://obe-backend.onrender.com/api`) |
+   | `VITE_GOOGLE_CLIENT_ID` | Your Google OAuth Client ID |
+   | `VITE_ML_URL` | *(Optional)* Direct ML Service URL from Step 2 |
+5. Click **Deploy**. Vercel will build the frontend and apply the SPA rewrites configured in `frontend/vercel.json`.
+6. Once deployed, update `CORS_ORIGINS` and `FRONTEND_URL` on your Render backend service with the real Vercel URL.
+
+---
+
 ## Known Gaps & Institutional Disclosures
 
 1. **PO / PSO Formula College Confirmation**:

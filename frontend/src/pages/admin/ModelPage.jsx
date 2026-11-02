@@ -159,7 +159,7 @@ export default function ModelPage() {
             <h3 className="font-bold text-lg text-ink font-serif">ML Microservice Is Offline</h3>
           </div>
           <p className="text-sm text-muted">
-            The Python FastAPI service at <code className="px-1.5 py-0.5 rounded bg-surface text-status-below font-mono text-xs border border-status-below/20">http://localhost:8000</code> could not be contacted.
+            The Python FastAPI service at <code className="px-1.5 py-0.5 rounded bg-surface text-status-below font-mono text-xs border border-status-below/20">{import.meta.env.VITE_ML_URL || 'ML Service Endpoint'}</code> could not be contacted.
             Backend routes and other OBE platform services remain operational with graceful degradation.
           </p>
           <div className="p-3 bg-surface rounded-lg text-xs font-mono text-muted border border-border">
