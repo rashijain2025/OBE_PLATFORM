@@ -45,30 +45,34 @@ const corsOptions = {
     // Allow non-browser requests (server-to-server, curl, health checks)
     if (!origin) return callback(null, true);
 
-    // Strictly disallow wildcard in production
+    const cleanOrigin = origin.replace(/\/$/, '').toLowerCase();
+
+    // Check configured or default allowed origins
+    if (allowedOrigins.some((o) => o.replace(/\/$/, '').toLowerCase() === cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel deployments (*.vercel.app)
+    if (cleanOrigin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // In non-production, allow localhost on any port
+    if (!isProduction && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) {
+      return callback(null, true);
+    }
+
+    // If wildcard is enabled
     if (!isProduction && allowedOrigins.includes('*')) {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow all Vercel deployments of the app (e.g. preview or production URLs)
-    if (origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-
-    // In development mode, allow localhost on any port
-    if (!isProduction && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error(`Origin '${origin}' not allowed by CORS`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
