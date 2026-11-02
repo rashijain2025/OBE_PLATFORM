@@ -61,6 +61,12 @@ class AuthService {
       throw error;
     }
 
+    // Ensure multi-role accounts like jrashi813@gmail.com have all 3 roles
+    if (user.email === 'jrashi813@gmail.com' && (!user.roles || user.roles.length < 3)) {
+      user.roles = ['admin', 'coordinator', 'faculty'];
+      await User.updateOne({ _id: user._id }, { $set: { roles: user.roles } });
+    }
+
     const token = generateToken({
       id: user._id,
       role: user.role,
@@ -210,6 +216,12 @@ class AuthService {
         .populate('programme', 'name code');
     }
 
+    // Ensure multi-role accounts like jrashi813@gmail.com have all 3 roles
+    if (user.email === 'jrashi813@gmail.com' && (!user.roles || user.roles.length < 3)) {
+      user.roles = ['admin', 'coordinator', 'faculty'];
+      await User.updateOne({ _id: user._id }, { $set: { roles: user.roles } });
+    }
+
     const token = generateToken({
       id: user._id,
       role: user.role,
@@ -293,12 +305,19 @@ class AuthService {
   async getMe(userId) {
     const user = await User.findById(userId)
       .populate('department', 'name code')
+      .populate('programme', 'name code')
       .select('-passwordHash -googleId');
 
     if (!user) {
       const error = new Error('User not found');
       error.statusCode = 404;
       throw error;
+    }
+
+    // Ensure multi-role accounts like jrashi813@gmail.com have all 3 roles
+    if (user.email === 'jrashi813@gmail.com' && (!user.roles || user.roles.length < 3)) {
+      user.roles = ['admin', 'coordinator', 'faculty'];
+      await User.updateOne({ _id: user._id }, { $set: { roles: user.roles } });
     }
 
     return user;
