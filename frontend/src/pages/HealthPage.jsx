@@ -53,15 +53,25 @@ export default function HealthPage() {
 
     getMlHealth()
       .then((res) => {
-        setMl({
-          status: 'ok',
-          details: `Service: ${res.data.data.service}`,
-        });
+        const d = res.data?.data || res.data || {};
+        if (d.mlServiceOnline === false) {
+          setMl({
+            status: 'error',
+            details: d.message || 'ML service waking up or offline',
+          });
+        } else {
+          const serviceName = d.service || 'ML Engine';
+          const modelAlgo = d.algorithm || 'Loaded';
+          setMl({
+            status: 'ok',
+            details: `${serviceName} · ${modelAlgo}`,
+          });
+        }
       })
       .catch((err) => {
         setMl({
           status: 'error',
-          details: err.message || 'Cannot reach ML service',
+          details: err.response?.data?.message || err.message || 'Cannot reach ML service',
         });
       });
   }, []);

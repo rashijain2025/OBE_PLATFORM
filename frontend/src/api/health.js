@@ -1,7 +1,8 @@
 import api from './axios';
 import axios from 'axios';
 
-const ML_URL = import.meta.env.VITE_ML_URL;
+const rawMlUrl = import.meta.env.VITE_ML_URL;
+const ML_URL = rawMlUrl ? rawMlUrl.replace(/\/+$/, '') : '';
 
 /**
  * Check backend health.
@@ -10,12 +11,18 @@ export const getBackendHealth = () => api.get('/health');
 
 /**
  * Check ML service health.
- * If VITE_ML_URL is configured, queries the ML service directly.
- * Otherwise, falls back to the backend /ml/model-info endpoint.
+ * First queries ML service directly (if configured). If that encounters CORS or network error,
+ * falls back to querying ML status via backend proxy (/ml/model-info).
  */
-export const getMlHealth = () => {
+export const getMlHealth = async () => {
   if (ML_URL) {
-    return axios.get(`${ML_URL}/health`);
+    try {
+      const directRes = await axios.get(`${ML_URL}/health`, { timeout: 8000 });
+      return directRes;
+    } catch (err) {
+      console.warn('Direct ML health check failed, falling back to backend:', err?.message);
+    }
   }
   return api.get('/ml/model-info');
 };
+

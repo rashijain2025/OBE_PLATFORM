@@ -15,26 +15,30 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allowed origins for ML service: backend origin from env, or local origins
-backend_origin = os.getenv("BACKEND_ORIGIN") or os.getenv("BACKEND_URL") or os.getenv("CORS_ORIGINS")
-if backend_origin:
-    allowed_origins = [o.strip() for o in backend_origin.split(",") if o.strip()]
-else:
-    allowed_origins = [
-        "http://localhost:5001",
-        "http://127.0.0.1:5001",
-        "http://localhost:5000",
-        "http://127.0.0.1:5000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
+# Allowed origins for ML service
+env_origins = os.getenv("BACKEND_ORIGIN") or os.getenv("BACKEND_URL") or os.getenv("CORS_ORIGINS") or ""
+parsed_env_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
 
-is_production = os.getenv("ENVIRONMENT") == "production" or os.getenv("NODE_ENV") == "production"
-cors_origins = allowed_origins if is_production else list(set(allowed_origins + ["*"]))
+cors_origins = list(
+    set(
+        [
+            "http://localhost:5001",
+            "http://127.0.0.1:5001",
+            "http://localhost:5000",
+            "http://127.0.0.1:5000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://obeplatform.vercel.app",
+            "https://obe-platform.onrender.com",
+        ]
+        + parsed_env_origins
+    )
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -58,7 +62,9 @@ class PredictRequest(BaseModel):
     instances: List[StudentCOFeatureInstance] = Field(default_factory=list)
 
 
+@app.get("/")
 @app.get("/health")
+@app.get("//health")
 async def health_check():
     return {
         "success": True,
