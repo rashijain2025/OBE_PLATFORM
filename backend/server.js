@@ -28,10 +28,17 @@ const configuredOrigins = rawOrigins
   .map((o) => o.trim())
   .filter(Boolean);
 
-// Fallback to localhost origins for local development when not configured
+// Fallback to defaults when not configured (includes production Vercel app and local dev)
+const defaultOrigins = [
+  'https://obeplatform.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+];
+
 const allowedOrigins = configuredOrigins.length > 0
-  ? configuredOrigins
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+  ? [...new Set([...configuredOrigins, ...defaultOrigins])]
+  : defaultOrigins;
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -44,6 +51,11 @@ const corsOptions = {
     }
 
     if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel deployments of the app (e.g. preview or production URLs)
+    if (origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
 
@@ -60,9 +72,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
-// Security middleware
-app.use(helmet());
+// Security middleware (relaxed COOP so Google OAuth popup postMessage is not blocked)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,
+  })
+);
 app.use(mongoSanitize());
 
 // Global rate limiter: 300 requests per 15 minutes per IP (skip CORS preflights)
