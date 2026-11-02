@@ -154,7 +154,19 @@ export default function CoursesPage() {
       <SearchInput value={search} onChange={setSearch} placeholder="Search by name, code, year..." />
 
       <Card>
-        {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="No courses found" /> : (
+        {loading ? (
+          <Spinner />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title={user?.role === 'faculty' ? 'No courses assigned yet' : 'No courses found'}
+            description={
+              user?.role === 'faculty'
+                ? 'Your coordinator has not assigned a course yet.'
+                : 'No course records found matching your filters.'
+            }
+          />
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

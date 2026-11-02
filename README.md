@@ -76,20 +76,121 @@ python -m pytest
 
 ---
 
-## Seeded User Credentials
+## Authentication & Role Architecture
 
-The platform has **3 login roles**: `admin`, `coordinator`, and `faculty`. Students do **not** log in (student accounts cannot authenticate and return HTTP 403). Students exist exclusively as academic data records (name, rollNo, department) required for course enrollments, StudentMarks, CO attainment, and ML predictions.
+The platform is a **staff-only portal** with **3 login roles**:
+1. **Admin**: Dedicated system administrator managing departments, programmes, and coordinator registrations. Authenticates exclusively via email + password configured in `.env`. Admin accounts **never** log in through Google.
+2. **Coordinator**: Department OBE Coordinator. Signs in using their official `@mitsgwalior.in` Google account after being pre-registered by the Admin. Manages curriculum outcomes, PEO/PO/PSO mappings, invites department faculty, and assigns programme courses.
+3. **Faculty**: Course instructors. Invited by their department coordinator via `@mitsgwalior.in` email. Sign in directly via Google to access their assigned courses, marks entry, and CO attainment.
+4. **Students**: Data records only. Student records never authenticate and are rejected with HTTP 403.
 
-All seeded login accounts use password: `Password@123`
+---
 
-| Role | Name | Email | Notes |
-| :--- | :--- | :--- | :--- |
-| **Admin** | System Administrator | `admin@obe.edu` | Full user, student records & system management |
-| **Coordinator** | Dr. Ramesh Sharma | `coordinator@obe.edu` | OBE Coordinator, IT Dept (Head) |
-| **Faculty** | Prof. Rajesh Kumar | `faculty1@obe.edu` | Faculty member, IT Dept (teaches DBMS & OS) |
-| **Faculty** | Prof. Anita Verma | `faculty2@obe.edu` | Faculty member, IT Dept (teaches CN) |
+## Environment & Credential Setup
 
-*(Student data records are created via `npm run seed` or `npm run seed:demo` with roll numbers `22IT001`–`22IT010` / `2024-IT-001`–`2024-IT-030` and managed under Admin > Student Records).*
+### 1. Admin Credentials from Environment
+
+Admin credentials are never stored or logged in plain text. On server startup, the backend automatically upserts the admin user from your `.env` configuration:
+
+```env
+# backend/.env
+ADMIN_EMAIL=admin@mitsgwalior.in
+ADMIN_PASSWORD=YourStrongPassword_Minimum_12_Chars
+ADMIN_NAME=System Administrator
+```
+
+> [!IMPORTANT]
+> If `ADMIN_PASSWORD` is omitted or shorter than 12 characters, a warning is logged on startup and the admin account will **not** be created.
+
+---
+
+### 2. Google OAuth 2.0 Setup
+
+To enable institutional Google Sign-In for Coordinators and Faculty:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Create or select a project (e.g. `MITS OBE Platform`).
+3. Configure the **OAuth Consent Screen**:
+   - User Type: **Internal** (recommended for `@mitsgwalior.in` Google Workspace) or **External** (with authorized testing users).
+   - Scopes: `email`, `profile`, `openid`.
+4. Create an **OAuth Client ID**:
+   - Application Type: **Web application**.
+   - **Authorized JavaScript origins**:
+     - `http://localhost:5173`
+     - `http://localhost:5001` (if running frontend served from backend)
+     - `https://your-production-domain.edu.in`
+   - **Authorized redirect URIs**: (handled via Google Identity Services button).
+5. Copy your Client ID and add it to `.env`:
+
+```env
+# backend/.env
+GOOGLE_CLIENT_ID=804356497266-7pv159hkvrlvfagps6l9p9c5gder1mkd.apps.googleusercontent.com
+ALLOWED_EMAIL_DOMAIN=mitsgwalior.in
+
+# frontend/.env
+VITE_GOOGLE_CLIENT_ID=804356497266-7pv159hkvrlvfagps6l9p9c5gder1mkd.apps.googleusercontent.com
+```
+
+*Note: Look-alike domains (e.g. `evil.com` suffixes) and unverified Google emails are strictly rejected on the backend.*
+
+---
+
+### 3. SMTP Email Setup (Faculty Invitations)
+
+When a coordinator invites faculty members, invitation emails are dispatched via SMTP with the direct platform login link.
+
+Using Gmail / Google Workspace with an **App Password**:
+1. Enable **2-Step Verification** on your Google Account.
+2. Go to [Google App Passwords](https://myaccount.google.com/apppasswords) and create an app password for `Mail / OBE Platform`.
+3. Configure in `backend/.env`:
+
+```env
+# backend/.env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@mitsgwalior.in
+SMTP_PASS=xxxx xxxx xxxx xxxx
+MAIL_FROM="MITS OBE Platform" <noreply@mitsgwalior.in>
+FRONTEND_URL=http://localhost:5173
+```
+
+*Graceful Fallback*: If SMTP is unconfigured or encounters a network issue, invitations are still saved (`mailSent: false`), and coordinators can click **"Copy Login Link"** or **"Copy Invite Message"** in the UI to share access links manually.
+
+---
+
+## System Workflows
+
+### How the Admin Pre-Registers a Coordinator
+1. Sign in as Admin at `/login` using the email & password from `.env`.
+2. Navigate to **Coordinators** (`/coordinators`) in the sidebar.
+3. Click **Add Coordinator** and enter:
+   - Full Name (e.g., `Dr. Ramesh Sharma`).
+   - Official Email ending in `@mitsgwalior.in` (e.g., `coordinator@mitsgwalior.in`).
+   - Department and Academic Programme (e.g., `B.Tech Information Technology`).
+4. Each programme can only have **one** assigned coordinator.
+5. The coordinator can now log in via Google using that email.
+
+### How the Coordinator Invites Faculty & Assigns Courses
+1. Sign in at `/login` with the pre-registered `@mitsgwalior.in` Google account.
+2. Navigate to **My Faculty** (`/my-faculty`) in the sidebar.
+3. In the invite box, paste single or multiple emails (up to 50 at once, comma or newline separated) and click **Send Invitations**.
+4. Check real-time per-email chips (`created`, `already_invited`, `already_active`, `invalid`, `domain_rejected`).
+5. When faculty members accept the invite by signing in via Google, they appear in the **Active Department Faculty** table.
+6. Click **Assign Courses** next to any faculty member to map courses of your programme to them.
+
+---
+
+## Seed & Demo Flow
+
+To seed base departments, programmes, official PEOs/POs/PSOs, demo coordinator and pending invitations:
+```bash
+cd backend
+npm run seed
+```
+Demo seeded records:
+- **Demo Coordinator**: pre-registered with email defined by `DEMO_COORDINATOR_EMAIL` (default: `coordinator@mitsgwalior.in`)
+- **Demo Invitation**: pending invitation for `demo.faculty@mitsgwalior.in`
+
 
 ---
 

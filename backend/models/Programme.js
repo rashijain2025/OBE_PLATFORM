@@ -28,6 +28,11 @@ const programmeSchema = new mongoose.Schema(
       enum: ['UG', 'PG', 'Diploma', 'PhD'],
       default: 'UG',
     },
+    coordinator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,

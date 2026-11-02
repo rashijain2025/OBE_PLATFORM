@@ -78,6 +78,18 @@ export default function DashboardPage() {
     }
 
     if (user?.role === 'faculty') {
+      if (!stats.myCourses || stats.myCourses === 0) {
+        return (
+          <div className="p-8 rounded-2xl border border-dashed border-border bg-surface text-center">
+            <BookOpen className="w-10 h-10 text-muted mx-auto mb-3" />
+            <h4 className="font-serif text-lg font-bold text-ink">No courses assigned yet</h4>
+            <p className="text-muted text-sm mt-1 max-w-md mx-auto">
+              Your coordinator has not assigned a course yet.
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <StatCard label="My Courses" value={stats.myCourses} icon={BookOpen} sub="Assigned courses" />

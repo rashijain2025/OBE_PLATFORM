@@ -49,44 +49,47 @@ const seedDatabase = async () => {
       console.log('Programme BTECH-IT already exists.');
     }
 
-    // Hash password for all users
+    // Hash password for demo users
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, salt);
 
-    // 3. Admin (1 user)
-    console.log('Seeding Admin...');
-    await User.findOneAndUpdate(
-      { email: 'admin@obe.edu' },
-      {
-        name: 'System Administrator',
-        email: 'admin@obe.edu',
-        passwordHash,
-        role: 'admin',
-        department: null,
-        isActive: true,
-      },
-      { upsert: true, new: true }
-    );
-    console.log('Admin seeded: admin@obe.edu');
-
-    // 4. Coordinator (1 user)
+    // Coordinator (1 demo user, no hardcoded admin credentials)
     console.log('Seeding OBE Coordinator...');
+    const coordinatorEmail = (process.env.DEMO_COORDINATOR_EMAIL || 'coordinator@mitsgwalior.in').toLowerCase().trim();
     const coordinator = await User.findOneAndUpdate(
-      { email: 'coordinator@obe.edu' },
+      { email: coordinatorEmail },
       {
         name: 'Dr. Ramesh Sharma (OBE Coordinator)',
-        email: 'coordinator@obe.edu',
+        email: coordinatorEmail,
         passwordHash,
         role: 'coordinator',
         department: itDept._id,
+        programme: itProgramme._id,
         isActive: true,
       },
       { upsert: true, new: true }
     );
-    // Set HOD / Coordinator ref if desired
     itDept.headOfDepartment = coordinator._id;
     await itDept.save();
-    console.log('Coordinator seeded: coordinator@obe.edu');
+    itProgramme.coordinator = coordinator._id;
+    await itProgramme.save();
+    console.log(`Coordinator seeded: ${coordinatorEmail}`);
+
+    // Seed one pending demo invitation
+    const { Invitation } = require('../models');
+    await Invitation.findOneAndUpdate(
+      { email: 'demo.faculty@mitsgwalior.in', department: itDept._id },
+      {
+        email: 'demo.faculty@mitsgwalior.in',
+        department: itDept._id,
+        programme: itProgramme._id,
+        invitedBy: coordinator._id,
+        status: 'pending',
+        lastSentAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+    console.log('Demo pending invitation seeded: demo.faculty@mitsgwalior.in');
 
     // 5. Faculty (2 users)
     console.log('Seeding Faculty...');

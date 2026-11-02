@@ -6,14 +6,19 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./config/db');
+const { initAdminFromEnv } = require('./utils/initAdmin');
 const errorHandler = require('./middleware/errorHandler');
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB & initialize admin user from environment
+connectDB().then(() => {
+  if (process.env.NODE_ENV !== 'test') {
+    initAdminFromEnv().catch((err) => console.error('[Admin Init Error]:', err.message));
+  }
+});
 
 // Standard CORS middleware first so preflight and rate-limit responses always carry CORS headers
 app.use(cors());
@@ -51,9 +56,13 @@ if (process.env.NODE_ENV !== 'test') {
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth/login', loginLimiter); // Strict limiter on login
+app.use('/api/auth/google', loginLimiter); // Strict limiter on google login
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/coordinators', require('./routes/coordinatorRoutes'));
+app.use('/api/invitations', require('./routes/invitationRoutes'));
+app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/departments', require('./routes/departmentRoutes'));
 app.use('/api/programmes', require('./routes/programmeRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));

@@ -23,6 +23,26 @@ class AuthController {
   }
 
   /**
+   * POST /api/auth/google
+   */
+  async googleLogin(req, res, next) {
+    try {
+      const { idToken, token, credential } = req.body;
+      const result = await authService.googleLogin({
+        idToken: idToken || token || credential,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Login successful',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/auth/register (Admin-only)
    */
   async register(req, res, next) {
@@ -78,6 +98,24 @@ class AuthController {
         success: true,
         data: null,
         message: result.message,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/auth/switch-role
+   */
+  async switchRole(req, res, next) {
+    try {
+      const { role } = req.body;
+      const result = await authService.switchRole(req.user._id, role);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: `Successfully switched active role to ${role}`,
       });
     } catch (error) {
       next(error);

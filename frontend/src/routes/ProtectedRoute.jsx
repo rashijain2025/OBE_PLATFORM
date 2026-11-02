@@ -19,7 +19,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+  const userRoles = user?.roles && user.roles.length > 0 ? user.roles : [user?.role];
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.some((r) => userRoles.includes(r))) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-full bg-status-below-soft border border-red-200 flex items-center justify-center mb-4">

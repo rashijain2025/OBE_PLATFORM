@@ -71,11 +71,16 @@ const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRoles = Array.isArray(req.user.roles) && req.user.roles.length > 0
+      ? req.user.roles
+      : [req.user.role];
+
+    const hasAccess = roles.some((r) => userRoles.includes(r));
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         data: null,
-        message: `Forbidden: User role '${req.user.role}' is not authorized to access this resource.`,
+        message: `Forbidden: User roles [${userRoles.join(', ')}] are not authorized to access this resource.`,
       });
     }
 

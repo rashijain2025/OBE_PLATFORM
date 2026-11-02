@@ -20,12 +20,17 @@ import {
 } from 'lucide-react';
 
 export default function AppLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleSwitchRole = async (targetRole) => {
+    if (targetRole === user?.role) return;
+    await switchRole(targetRole);
   };
 
   // Define nav items configured per role
@@ -39,6 +44,7 @@ export default function AppLayout() {
         return [
           ...common,
           { to: '/users', label: 'User Directory', icon: Users },
+          { to: '/coordinators', label: 'Coordinators', icon: UserCheck },
           { to: '/departments', label: 'Departments & Progs', icon: Building2 },
           { to: '/courses', label: 'Courses', icon: BookOpen },
           { to: '/outcomes', label: 'PEO / PO / PSO', icon: Award },
@@ -46,12 +52,13 @@ export default function AppLayout() {
           { to: '/programme-report', label: 'Programme Report', icon: BarChart3 },
           { to: '/early-warning', label: 'Early Warning', icon: Sparkles },
           { to: '/model', label: 'ML Model Ops', icon: Brain },
-          { to: '/enrollments', label: 'Enrollments', icon: UserCheck },
+          { to: '/enrollments', label: 'Enrollments', icon: Shield },
           { to: '/health', label: 'System Health', icon: Activity },
         ];
       case 'coordinator':
         return [
           ...common,
+          { to: '/my-faculty', label: 'My Faculty', icon: Users },
           { to: '/courses', label: 'Courses', icon: BookOpen },
           { to: '/departments', label: 'Departments & Progs', icon: Building2 },
           { to: '/outcomes', label: 'PEO / PO / PSO', icon: Award },
@@ -104,6 +111,31 @@ export default function AppLayout() {
             <p className="text-xs text-muted hidden sm:block">Madhav Institute of Technology &amp; Science</p>
           </div>
         </Link>
+
+        {/* Multi-role Switcher (when user has multiple roles) */}
+        {user?.roles && user.roles.length > 1 && (
+          <div className="flex items-center gap-1.5 p-1 bg-surface-alt rounded-lg border border-border shadow-inner">
+            <span className="text-[11px] font-semibold text-muted px-1.5 hidden md:inline">Role View:</span>
+            {user.roles.map((r) => {
+              const isActive = user.role === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => handleSwitchRole(r)}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all capitalize ${
+                    isActive
+                      ? 'bg-ink text-white shadow-sm'
+                      : 'text-muted hover:text-ink hover:bg-surface'
+                  }`}
+                  title={`Switch to ${r} view`}
+                >
+                  {r}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* User Info & Logout */}
         <div className="flex items-center gap-4">
