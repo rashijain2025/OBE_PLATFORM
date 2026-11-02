@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { loginApi, getMeApi } from '../api/auth';
+import { loginApi, getMeApi, googleLoginApi, switchRoleApi } from '../api/auth';
 
 const AuthContext = createContext(null);
 
@@ -64,6 +64,50 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
+   * Login user with verified Google credential / idToken
+   */
+  const loginWithGoogle = async (idToken) => {
+    setError(null);
+    try {
+      const response = await googleLoginApi({ idToken });
+      if (response.success && response.data) {
+        const { user: userData, token: jwtToken } = response.data;
+        localStorage.setItem('token', jwtToken);
+        setToken(jwtToken);
+        setUser(userData);
+        return { success: true, user: userData };
+      }
+      throw new Error(response.message || 'Google login failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Google login failed';
+      setError(msg);
+      return { success: false, error: msg, status: err.response?.status };
+    }
+  };
+
+  /**
+   * Switch active role for multi-role user
+   */
+  const switchRole = async (targetRole) => {
+    setError(null);
+    try {
+      const response = await switchRoleApi({ role: targetRole });
+      if (response.success && response.data) {
+        const { user: userData, token: jwtToken } = response.data;
+        localStorage.setItem('token', jwtToken);
+        setToken(jwtToken);
+        setUser(userData);
+        return { success: true, user: userData };
+      }
+      throw new Error(response.message || 'Failed to switch role');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Failed to switch role';
+      setError(msg);
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
    * Logout user and clear tokens
    */
   const logout = () => {
@@ -79,6 +123,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
+    loginWithGoogle,
+    switchRole,
     logout,
     refreshUser: loadUser,
     isAuthenticated: !!token && !!user,

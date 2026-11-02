@@ -17,12 +17,12 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: {
       type: String,
-      required: function () {
-        return this.role !== 'student';
-      },
-      default: function () {
-        return this.role === 'student' ? '$student_record_no_login$' : undefined;
-      },
+      default: null,
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
     },
     role: {
       type: String,
@@ -30,9 +30,21 @@ const userSchema = new mongoose.Schema(
       default: 'faculty',
       required: true,
     },
+    roles: {
+      type: [String],
+      enum: ['admin', 'coordinator', 'faculty', 'student'],
+      default: function () {
+        return this.role ? [this.role] : ['faculty'];
+      },
+    },
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
+      default: null,
+    },
+    programme: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Programme',
       default: null,
     },
     rollNo: {
@@ -47,6 +59,20 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        delete ret.passwordHash;
+        delete ret.googleId;
+        return ret;
+      },
+    },
+    toObject: {
+      transform: (doc, ret) => {
+        delete ret.passwordHash;
+        delete ret.googleId;
+        return ret;
+      },
+    },
   }
 );
 

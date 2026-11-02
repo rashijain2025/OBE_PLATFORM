@@ -45,7 +45,10 @@ class CourseController {
           message: 'code, name, semester, programme, faculty and academicYear are required',
         });
       }
-      const course = await courseService.createCourse({ code, name, semester, programme, faculty, academicYear, credits });
+      const course = await courseService.createCourse(
+        { code, name, semester, programme, faculty, academicYear, credits },
+        { role: req.user.role, user: req.user }
+      );
       res.status(201).json({ success: true, data: course, message: 'Course created successfully' });
     } catch (err) { next(err); }
   }
@@ -53,7 +56,11 @@ class CourseController {
   async update(req, res, next) {
     try {
       const { code, name, semester, programme, faculty, academicYear, credits } = req.body;
-      const course = await courseService.updateCourse(req.params.id, { code, name, semester, programme, faculty, academicYear, credits });
+      const course = await courseService.updateCourse(
+        req.params.id,
+        { code, name, semester, programme, faculty, academicYear, credits },
+        { role: req.user.role, user: req.user }
+      );
       res.json({ success: true, data: course, message: 'Course updated successfully' });
     } catch (err) { next(err); }
   }

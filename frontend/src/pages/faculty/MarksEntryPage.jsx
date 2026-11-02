@@ -255,7 +255,7 @@ export default function MarksEntryPage() {
           selectedCourseId && (
             <Link
               to={`/courses/${selectedCourseId}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-ink hover:text-ink-dark bg-paper hover:bg-surface border border-border transition-colors shadow-sm"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Course Setup</span>
@@ -319,14 +319,14 @@ export default function MarksEntryPage() {
       ) : (
         <Card>
           {/* Header Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-gray-800">
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span>Assessment: <strong className="text-white">{assessment?.name}</strong></span>
-              <span>Max Marks: <strong className="text-blue-400">{assessment?.maxMarks}</strong></span>
-              <span>Enrolled Students: <strong className="text-white">{students.length}</strong></span>
-              <span>Questions: <strong className="text-white">{questions.length}</strong></span>
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-border">
+            <div className="flex items-center gap-4 text-xs text-muted flex-wrap">
+              <span>Assessment: <strong className="text-ink font-medium">{assessment?.name}</strong></span>
+              <span>Max Marks: <strong className="text-accent font-mono font-semibold tabular-nums">{assessment?.maxMarks}</strong></span>
+              <span>Enrolled Students: <strong className="text-ink font-mono font-medium">{students.length}</strong></span>
+              <span>Questions: <strong className="text-ink font-mono font-medium">{questions.length}</strong></span>
               {validationErrors.length > 0 && (
-                <span className="text-rose-400 flex items-center gap-1 font-medium">
+                <span className="text-status-below flex items-center gap-1 font-medium font-mono tabular-nums">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {validationErrors.length} invalid mark(s)
                 </span>
@@ -350,22 +350,22 @@ export default function MarksEntryPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-800 text-gray-400 uppercase tracking-wider">
+                <tr className="border-b border-border text-muted uppercase tracking-wider bg-paper">
                   <th className="py-3 px-3 w-28 font-semibold">Roll No</th>
                   <th className="py-3 px-3 w-48 font-semibold">Student Name</th>
                   {questions.map((q) => (
                     <th key={q._id} className="py-3 px-2 text-center w-24">
-                      <div className="font-bold text-white text-xs">{q.label}</div>
-                      <div className="text-[10px] text-gray-400 font-mono mt-0.5">Max {q.maxMarks}</div>
-                      <div className="text-[10px] text-purple-400 font-mono">{q.co?.code}</div>
+                      <div className="font-serif font-bold text-ink text-xs">{q.label}</div>
+                      <div className="text-[10px] text-muted font-mono mt-0.5 tabular-nums">Max {q.maxMarks}</div>
+                      <div className="text-[10px] text-accent font-mono font-semibold">{q.co?.code}</div>
                     </th>
                   ))}
-                  <th className="py-3 px-3 text-center w-28 font-semibold text-emerald-400">
+                  <th className="py-3 px-3 text-center w-28 font-semibold text-status-attained font-mono tabular-nums">
                     Total ({assessment?.maxMarks})
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/60">
+              <tbody className="divide-y divide-border">
                 {students.map((s) => {
                   let totalObtained = 0;
                   let hasAnyMark = false;
@@ -381,11 +381,11 @@ export default function MarksEntryPage() {
                   }
 
                   return (
-                    <tr key={s._id} className="hover:bg-gray-800/20 transition-colors">
-                      <td className="py-2.5 px-3 font-mono font-bold text-indigo-300">
+                    <tr key={s._id} className="hover:bg-paper/50 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-bold text-accent tabular-nums">
                         {s.rollNo || '—'}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-white truncate max-w-[12rem]">
+                      <td className="py-2.5 px-3 font-medium text-ink truncate max-w-[12rem]">
                         {s.name}
                       </td>
                       {questions.map((q) => {
@@ -404,24 +404,24 @@ export default function MarksEntryPage() {
                               placeholder="—"
                               value={val}
                               onChange={(e) => handleCellChange(s._id, q._id, e.target.value)}
-                              className={`w-16 text-center text-xs font-mono font-semibold py-1 px-1 rounded-md bg-gray-950 border transition-all focus:outline-none focus:ring-1 ${
+                              className={`w-16 text-center text-xs font-mono font-semibold py-1 px-1 rounded-md border transition-all focus:outline-none focus:ring-1 tabular-nums ${
                                 isInvalid
-                                  ? 'border-rose-500 bg-rose-950/20 text-rose-300 focus:ring-rose-500'
+                                  ? 'border-status-below bg-status-below-soft text-status-below focus:ring-status-below'
                                   : val !== ''
-                                  ? 'border-indigo-500/40 text-emerald-300 focus:ring-indigo-500'
-                                  : 'border-gray-800 text-gray-400 focus:ring-indigo-500'
+                                  ? 'border-accent/40 bg-surface text-ink focus:ring-ink'
+                                  : 'border-border bg-paper/50 text-muted focus:ring-ink cell-not-evaluated'
                               }`}
                             />
                           </td>
                         );
                       })}
-                      <td className="py-2.5 px-3 text-center font-mono font-bold">
+                      <td className="py-2.5 px-3 text-center font-mono font-bold tabular-nums">
                         {hasAnyMark ? (
-                          <span className="text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          <span className="text-status-attained px-2 py-0.5 rounded bg-status-attained-soft border border-emerald-200">
                             {Number(totalObtained.toFixed(2))}
                           </span>
                         ) : (
-                          <span className="text-gray-500">—</span>
+                          <span className="text-muted">—</span>
                         )}
                       </td>
                     </tr>
@@ -431,7 +431,7 @@ export default function MarksEntryPage() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-800 text-xs text-gray-500">
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-border text-xs text-muted">
             <div>Tip: Empty cells are saved as null (not evaluated). Enter 0 for zero marks.</div>
             <PrimaryButton onClick={handleBulkSave} disabled={saving || validationErrors.length > 0}>
               <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save All Marks'}
@@ -442,22 +442,22 @@ export default function MarksEntryPage() {
 
       {/* CSV Import Modal */}
       {csvModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
+          <div className="w-full max-w-xl bg-surface border border-border rounded-xl p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-base font-serif font-bold text-ink flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-accent" />
                 <span>Import Marks via CSV</span>
               </h3>
               <button
                 onClick={() => setCsvModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-muted hover:text-ink transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               CSV must have headers matching the student roll number and question labels (e.g. <code>RollNo,{questions.map((q) => q.label).join(',')}</code>).
             </p>
 
@@ -472,7 +472,7 @@ export default function MarksEntryPage() {
               <GhostButton onClick={() => fileInputRef.current?.click()}>
                 <Upload className="w-3.5 h-3.5" /> Upload .csv File
               </GhostButton>
-              <span className="text-xs text-gray-500">or paste CSV text below:</span>
+              <span className="text-xs text-muted">or paste CSV text below:</span>
             </div>
 
             <textarea
@@ -480,7 +480,7 @@ export default function MarksEntryPage() {
               onChange={(e) => setCsvText(e.target.value)}
               placeholder={`RollNo,${questions.map((q) => q.label).join(',')}\n22IT001,${questions.map((q) => q.maxMarks).join(',')}\n22IT002,...`}
               rows={6}
-              className="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-paper border border-border rounded-lg p-3 text-xs font-mono text-ink focus:outline-none focus:border-ink shadow-inner"
             />
 
             <div className="flex justify-end gap-2 pt-2">

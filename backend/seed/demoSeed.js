@@ -31,7 +31,7 @@ const studentNames = [
 
 async function seedDemoData() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/obe_platform';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/obe_platform';
     console.log(`Connecting to MongoDB at: ${mongoUri}`);
     await mongoose.connect(mongoUri);
 

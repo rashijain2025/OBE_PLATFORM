@@ -11,7 +11,7 @@ export const getFacultyReportApi = async (courseId, target = 40) => {
 };
 
 export const exportAttainmentCSVUrl = (courseId, target = 40) => {
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+  const baseURL = import.meta.env.VITE_API_URL || '/api';
   const token = localStorage.getItem('token');
   const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
   return `${baseURL}/attainment/export?courseId=${courseId}&target=${target}${tokenParam}`;

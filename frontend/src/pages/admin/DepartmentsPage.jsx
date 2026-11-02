@@ -186,12 +186,12 @@ export default function DepartmentsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-800">
+      <div className="flex gap-1 border-b border-border">
         {[{ id: 'departments', label: 'Departments', icon: Building2 }, { id: 'programmes', label: 'Programmes', icon: Award }].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === id ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === id ? 'border-ink text-ink font-semibold' : 'border-transparent text-muted hover:text-ink'}`}
           >
             <Icon className="w-4 h-4" /> {label}
           </button>
@@ -209,19 +209,23 @@ export default function DepartmentsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-800">
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Name</th>
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Code</th>
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden md:table-cell">Head</th>
+                      <tr className="border-b border-border bg-paper/50">
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Name</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Code</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">Head</th>
                         {isAdmin && <th className="px-4 py-3" />}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800/60">
+                    <tbody className="divide-y divide-border">
                       {filteredDepts.map((d) => (
-                        <tr key={d._id} className="hover:bg-gray-800/30 transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">{d.name}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-indigo-400">{d.code}</td>
-                          <td className="px-4 py-3 text-gray-400 hidden md:table-cell">{d.headOfDepartment?.name || '—'}</td>
+                        <tr key={d._id} className="hover:bg-paper/60 transition-colors">
+                          <td className="px-4 py-3 font-medium text-ink">{d.name}</td>
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block">
+                              {d.code}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted hidden md:table-cell">{d.headOfDepartment?.name || '—'}</td>
                           {isAdmin && (
                             <td className="px-4 py-3">
                               <div className="flex gap-1.5 justify-end">
@@ -246,22 +250,26 @@ export default function DepartmentsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-800">
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Name</th>
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Code</th>
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden md:table-cell">Department</th>
-                        <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden lg:table-cell">Level</th>
+                      <tr className="border-b border-border bg-paper/50">
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Name</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Code</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">Department</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden lg:table-cell">Level</th>
                         {isAdmin && <th className="px-4 py-3" />}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800/60">
+                    <tbody className="divide-y divide-border">
                       {filteredProgs.map((p) => (
-                        <tr key={p._id} className="hover:bg-gray-800/30 transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">{p.name}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-indigo-400">{p.code}</td>
-                          <td className="px-4 py-3 text-gray-400 hidden md:table-cell">{p.department?.name || '—'}</td>
+                        <tr key={p._id} className="hover:bg-paper/60 transition-colors">
+                          <td className="px-4 py-3 font-medium text-ink">{p.name}</td>
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block">
+                              {p.code}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted hidden md:table-cell">{p.department?.name || '—'}</td>
                           <td className="px-4 py-3 hidden lg:table-cell">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{p.level}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-medium">{p.level}</span>
                           </td>
                           {isAdmin && (
                             <td className="px-4 py-3">

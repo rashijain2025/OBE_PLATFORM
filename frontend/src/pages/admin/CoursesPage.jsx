@@ -154,32 +154,48 @@ export default function CoursesPage() {
       <SearchInput value={search} onChange={setSearch} placeholder="Search by name, code, year..." />
 
       <Card>
-        {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="No courses found" /> : (
+        {loading ? (
+          <Spinner />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title={user?.role === 'faculty' ? 'No courses assigned yet' : 'No courses found'}
+            description={
+              user?.role === 'faculty'
+                ? 'Your coordinator has not assigned a course yet.'
+                : 'No course records found matching your filters.'
+            }
+          />
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Code</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3">Name</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden sm:table-cell">Faculty</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden md:table-cell">Sem</th>
-                  <th className="text-left text-xs font-semibold text-gray-400 uppercase px-4 py-3 hidden lg:table-cell">Year</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase">Actions</th>
+                <tr className="border-b border-border bg-paper/50">
+                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Code</th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Name</th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden sm:table-cell">Faculty</th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">Sem</th>
+                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden lg:table-cell">Year</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-muted uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/60">
+              <tbody className="divide-y divide-border">
                 {filtered.map((c) => (
-                  <tr key={c._id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-indigo-400 font-semibold">{c.code}</td>
-                    <td className="px-4 py-3 font-medium text-white">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{c.faculty?.name || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400 hidden md:table-cell">Sem {c.semester}</td>
-                    <td className="px-4 py-3 text-gray-400 hidden lg:table-cell">{c.academicYear}</td>
+                  <tr key={c._id} className="hover:bg-paper/60 transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs text-ink font-semibold bg-paper px-2 py-0.5 rounded border border-border inline-block">
+                        {c.code}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-ink">{c.name}</td>
+                    <td className="px-4 py-3 text-muted hidden sm:table-cell">{c.faculty?.name || '—'}</td>
+                    <td className="px-4 py-3 text-muted hidden md:table-cell">Sem {c.semester}</td>
+                    <td className="px-4 py-3 text-muted hidden lg:table-cell">{c.academicYear}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5 justify-end items-center">
                         <Link
                           to={`/courses/${c._id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg text-accent bg-accent-soft hover:bg-teal-100 border border-teal-200 transition-colors"
                         >
                           <BookOpen className="w-3.5 h-3.5" />
                           <span>Setup</span>

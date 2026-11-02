@@ -12,6 +12,13 @@ const router = express.Router();
 router.post('/login', (req, res, next) => authController.login(req, res, next));
 
 /**
+ * @route   POST /api/auth/google
+ * @desc    Authenticate user via verified Google ID token
+ * @access  Public
+ */
+router.post('/google', (req, res, next) => authController.googleLogin(req, res, next));
+
+/**
  * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Private (Admin only)
@@ -36,5 +43,12 @@ router.get('/me', protect, (req, res, next) => authController.getMe(req, res, ne
  * @access  Private (Authenticated users)
  */
 router.patch('/change-password', protect, (req, res, next) => authController.changePassword(req, res, next));
+
+/**
+ * @route   POST /api/auth/switch-role
+ * @desc    Switch active view role for multi-role users
+ * @access  Private (Authenticated users)
+ */
+router.post('/switch-role', protect, (req, res, next) => authController.switchRole(req, res, next));
 
 module.exports = router;

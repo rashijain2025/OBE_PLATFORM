@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import AppLayout from '../components/layout/AppLayout';
 import LoginPage from '../pages/auth/LoginPage';
+import HomePage from '../pages/HomePage';
 import DashboardPage from '../pages/DashboardPage';
 import HealthPage from '../pages/HealthPage';
 import UsersPage from '../pages/admin/UsersPage';
@@ -18,6 +19,8 @@ import COPOMappingPage from '../pages/coordinator/COPOMappingPage';
 import ProgrammeReportPage from '../pages/coordinator/ProgrammeReportPage';
 import EarlyWarningPage from '../pages/faculty/EarlyWarningPage';
 import ModelPage from '../pages/admin/ModelPage';
+import CoordinatorsPage from '../pages/admin/CoordinatorsPage';
+import MyFacultyPage from '../pages/coordinator/MyFacultyPage';
 
 function PublicRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -56,6 +59,7 @@ export default function AppRouter() {
 
             {/* Admin Module */}
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/coordinators" element={<CoordinatorsPage />} />
             <Route path="/departments" element={<DepartmentsPage />} />
             {/* Courses & Faculty Setup */}
             <Route path="/courses" element={<CoursesPage />} />
@@ -63,6 +67,7 @@ export default function AppRouter() {
             <Route path="/enrollments" element={<EnrollmentPage />} />
 
             {/* Coordinator & Curriculum Module */}
+            <Route path="/my-faculty" element={<MyFacultyPage />} />
             <Route path="/outcomes" element={<CurriculumOutcomesPage />} />
             <Route path="/mappings" element={<COPOMappingPage />} />
             <Route path="/curriculum" element={<COPOMappingPage />} />
@@ -78,9 +83,11 @@ export default function AppRouter() {
             <Route path="/model" element={<ModelPage />} />
           </Route>
 
-          {/* Root Redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Public Landing Route */}
+          <Route path="/" element={<HomePage />} />
+
+          {/* Catch-all Redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

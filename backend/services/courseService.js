@@ -83,7 +83,21 @@ class CourseService {
     };
   }
 
-  async createCourse({ code, name, semester, programme, faculty, academicYear, credits }) {
+  async createCourse({ code, name, semester, programme, faculty, academicYear, credits }, { role, user } = {}) {
+    if (role === 'coordinator' && user) {
+      let userProgId = user.programme?._id || user.programme;
+      if (!userProgId) {
+        const Programme = require('../models/Programme');
+        const prog = await Programme.findOne({ coordinator: user._id });
+        if (prog) userProgId = prog._id;
+      }
+      if (userProgId && String(programme) !== String(userProgId)) {
+        const err = new Error('Forbidden: You can only create courses belonging to your programme');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+
     // Verify faculty exists and has the right role
     const facultyUser = await User.findById(faculty);
     if (!facultyUser || facultyUser.role !== 'faculty') {
@@ -107,7 +121,33 @@ class CourseService {
       .populate('programme', 'name code');
   }
 
-  async updateCourse(id, { code, name, semester, programme, faculty, academicYear, credits }) {
+  async updateCourse(id, { code, name, semester, programme, faculty, academicYear, credits }, { role, user } = {}) {
+    const existingCourse = await Course.findById(id);
+    if (!existingCourse) {
+      const err = new Error('Course not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (role === 'coordinator' && user) {
+      let userProgId = user.programme?._id || user.programme;
+      if (!userProgId) {
+        const Programme = require('../models/Programme');
+        const prog = await Programme.findOne({ coordinator: user._id });
+        if (prog) userProgId = prog._id;
+      }
+      if (userProgId && String(existingCourse.programme) !== String(userProgId)) {
+        const err = new Error('Forbidden: You can only modify courses belonging to your programme');
+        err.statusCode = 403;
+        throw err;
+      }
+      if (programme && userProgId && String(programme) !== String(userProgId)) {
+        const err = new Error('Forbidden: Cannot reassign course to a different programme');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+
     if (faculty) {
       const facultyUser = await User.findById(faculty);
       if (!facultyUser || facultyUser.role !== 'faculty') {
@@ -130,11 +170,6 @@ class CourseService {
       .populate('faculty', 'name email')
       .populate('programme', 'name code');
 
-    if (!course) {
-      const err = new Error('Course not found');
-      err.statusCode = 404;
-      throw err;
-    }
     return course;
   }
 

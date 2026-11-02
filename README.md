@@ -76,20 +76,121 @@ python -m pytest
 
 ---
 
-## Seeded User Credentials
+## Authentication & Role Architecture
 
-The platform has **3 login roles**: `admin`, `coordinator`, and `faculty`. Students do **not** log in (student accounts cannot authenticate and return HTTP 403). Students exist exclusively as academic data records (name, rollNo, department) required for course enrollments, StudentMarks, CO attainment, and ML predictions.
+The platform is a **staff-only portal** with **3 login roles**:
+1. **Admin**: Dedicated system administrator managing departments, programmes, and coordinator registrations. Authenticates exclusively via email + password configured in `.env`. Admin accounts **never** log in through Google.
+2. **Coordinator**: Department OBE Coordinator. Signs in using their official `@mitsgwalior.in` Google account after being pre-registered by the Admin. Manages curriculum outcomes, PEO/PO/PSO mappings, invites department faculty, and assigns programme courses.
+3. **Faculty**: Course instructors. Invited by their department coordinator via `@mitsgwalior.in` email. Sign in directly via Google to access their assigned courses, marks entry, and CO attainment.
+4. **Students**: Data records only. Student records never authenticate and are rejected with HTTP 403.
 
-All seeded login accounts use password: `Password@123`
+---
 
-| Role | Name | Email | Notes |
-| :--- | :--- | :--- | :--- |
-| **Admin** | System Administrator | `admin@obe.edu` | Full user, student records & system management |
-| **Coordinator** | Dr. Ramesh Sharma | `coordinator@obe.edu` | OBE Coordinator, IT Dept (Head) |
-| **Faculty** | Prof. Rajesh Kumar | `faculty1@obe.edu` | Faculty member, IT Dept (teaches DBMS & OS) |
-| **Faculty** | Prof. Anita Verma | `faculty2@obe.edu` | Faculty member, IT Dept (teaches CN) |
+## Environment & Credential Setup
 
-*(Student data records are created via `npm run seed` or `npm run seed:demo` with roll numbers `22IT001`–`22IT010` / `2024-IT-001`–`2024-IT-030` and managed under Admin > Student Records).*
+### 1. Admin Credentials from Environment
+
+Admin credentials are never stored or logged in plain text. On server startup, the backend automatically upserts the admin user from your `.env` configuration:
+
+```env
+# backend/.env
+ADMIN_EMAIL=admin@mitsgwalior.in
+ADMIN_PASSWORD=YourStrongPassword_Minimum_12_Chars
+ADMIN_NAME=System Administrator
+```
+
+> [!IMPORTANT]
+> If `ADMIN_PASSWORD` is omitted or shorter than 12 characters, a warning is logged on startup and the admin account will **not** be created.
+
+---
+
+### 2. Google OAuth 2.0 Setup
+
+To enable institutional Google Sign-In for Coordinators and Faculty:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Create or select a project (e.g. `MITS OBE Platform`).
+3. Configure the **OAuth Consent Screen**:
+   - User Type: **Internal** (recommended for `@mitsgwalior.in` Google Workspace) or **External** (with authorized testing users).
+   - Scopes: `email`, `profile`, `openid`.
+4. Create an **OAuth Client ID**:
+   - Application Type: **Web application**.
+   - **Authorized JavaScript origins**:
+     - `http://localhost:5173`
+     - `http://localhost:5001` (if running frontend served from backend)
+     - `https://your-production-domain.edu.in`
+   - **Authorized redirect URIs**: (handled via Google Identity Services button).
+5. Copy your Client ID and add it to `.env`:
+
+```env
+# backend/.env
+GOOGLE_CLIENT_ID=804356497266-7pv159hkvrlvfagps6l9p9c5gder1mkd.apps.googleusercontent.com
+ALLOWED_EMAIL_DOMAIN=mitsgwalior.in
+
+# frontend/.env
+VITE_GOOGLE_CLIENT_ID=804356497266-7pv159hkvrlvfagps6l9p9c5gder1mkd.apps.googleusercontent.com
+```
+
+*Note: Look-alike domains (e.g. `evil.com` suffixes) and unverified Google emails are strictly rejected on the backend.*
+
+---
+
+### 3. SMTP Email Setup (Faculty Invitations)
+
+When a coordinator invites faculty members, invitation emails are dispatched via SMTP with the direct platform login link.
+
+Using Gmail / Google Workspace with an **App Password**:
+1. Enable **2-Step Verification** on your Google Account.
+2. Go to [Google App Passwords](https://myaccount.google.com/apppasswords) and create an app password for `Mail / OBE Platform`.
+3. Configure in `backend/.env`:
+
+```env
+# backend/.env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@mitsgwalior.in
+SMTP_PASS=xxxx xxxx xxxx xxxx
+MAIL_FROM="MITS OBE Platform" <noreply@mitsgwalior.in>
+FRONTEND_URL=http://localhost:5173
+```
+
+*Graceful Fallback*: If SMTP is unconfigured or encounters a network issue, invitations are still saved (`mailSent: false`), and coordinators can click **"Copy Login Link"** or **"Copy Invite Message"** in the UI to share access links manually.
+
+---
+
+## System Workflows
+
+### How the Admin Pre-Registers a Coordinator
+1. Sign in as Admin at `/login` using the email & password from `.env`.
+2. Navigate to **Coordinators** (`/coordinators`) in the sidebar.
+3. Click **Add Coordinator** and enter:
+   - Full Name (e.g., `Dr. Ramesh Sharma`).
+   - Official Email ending in `@mitsgwalior.in` (e.g., `coordinator@mitsgwalior.in`).
+   - Department and Academic Programme (e.g., `B.Tech Information Technology`).
+4. Each programme can only have **one** assigned coordinator.
+5. The coordinator can now log in via Google using that email.
+
+### How the Coordinator Invites Faculty & Assigns Courses
+1. Sign in at `/login` with the pre-registered `@mitsgwalior.in` Google account.
+2. Navigate to **My Faculty** (`/my-faculty`) in the sidebar.
+3. In the invite box, paste single or multiple emails (up to 50 at once, comma or newline separated) and click **Send Invitations**.
+4. Check real-time per-email chips (`created`, `already_invited`, `already_active`, `invalid`, `domain_rejected`).
+5. When faculty members accept the invite by signing in via Google, they appear in the **Active Department Faculty** table.
+6. Click **Assign Courses** next to any faculty member to map courses of your programme to them.
+
+---
+
+## Seed & Demo Flow
+
+To seed base departments, programmes, official PEOs/POs/PSOs, demo coordinator and pending invitations:
+```bash
+cd backend
+npm run seed
+```
+Demo seeded records:
+- **Demo Coordinator**: pre-registered with email defined by `DEMO_COORDINATOR_EMAIL` (default: `coordinator@mitsgwalior.in`)
+- **Demo Invitation**: pending invitation for `demo.faculty@mitsgwalior.in`
+
 
 ---
 
@@ -152,6 +253,105 @@ All seeded login accounts use password: `Password@123`
 | GET | `/api/courses/:id/predictions?target=` | Course Owner | Generate early warning attainment predictions, risk levels, and explainable feature impacts |
 | GET | `/api/ml/model-info` | Authenticated | Retrieve active model algorithm, metrics (Accuracy, F1), and training metadata |
 | POST | `/api/ml/train` | Admin only | Trigger model retraining across historical dataset |
+
+---
+
+## Deployment
+
+Follow this exact deployment sequence so that dependent connection strings and URLs are available at each step.
+
+### Target Architecture
+- **Database**: MongoDB Atlas (Free M0 or higher)
+- **ML Service**: Render Web Service (Python runtime, no Docker)
+- **Backend API**: Render Web Service (Node.js runtime, no Docker)
+- **Frontend SPA**: Vercel (React + Vite, with `vercel.json` SPA rewrite)
+
+---
+
+### Step 1: MongoDB Atlas (Database)
+1. Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+2. Under **Database Access**, create a database user (e.g., `obe_admin`) with read/write privileges.
+3. Under **Network Access**, add IP `0.0.0.0/0` (allow access from anywhere) so the Render backend can connect.
+4. Click **Connect** → **Drivers** and copy the connection string.
+5. Replace `<password>` and set the database name to `obe_platform`:
+   ```
+   mongodb+srv://<username>:<password>@<cluster>.mongodb.net/obe_platform?retryWrites=true&w=majority
+   ```
+
+---
+
+### Step 2: ML Microservice (Render Web Service)
+1. In the [Render Dashboard](https://dashboard.render.com), click **New +** → **Web Service**.
+2. Connect your GitHub repository.
+3. Configure service:
+   - **Name**: `obe-ml-service`
+   - **Root Directory**: `ml-service`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Set Environment Variables:
+   | Variable | Value / Description |
+   | :--- | :--- |
+   | `PORT` | `8000` (Render will override with `$PORT`) |
+   | `ENVIRONMENT` | `production` |
+   | `BACKEND_ORIGIN` | `https://your-backend.onrender.com` *(can be updated after Step 3)* |
+5. Click **Deploy Web Service** and note your service URL (e.g., `https://obe-ml-service.onrender.com`).
+   *Note: Trained model (`models/obe_attainment_model.joblib`) and dataset (`data/synthetic_historical_data.csv`) are committed to the repo, ensuring zero-latency restarts.*
+
+---
+
+### Step 3: Backend API (Render Web Service)
+1. In Render, click **New +** → **Web Service**.
+2. Connect the same repository.
+3. Configure service:
+   - **Name**: `obe-backend`
+   - **Root Directory**: `backend`
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server.js`
+4. Set Environment Variables:
+   | Variable | Description / Example |
+   | :--- | :--- |
+   | `PORT` | `5001` (or let Render set `$PORT`) |
+   | `NODE_ENV` | `production` |
+   | `MONGO_URI` | Atlas connection string from Step 1 |
+   | `JWT_SECRET` | Strong random secret string |
+   | `JWT_EXPIRE` | `7d` |
+   | `ML_SERVICE_URL` | ML Service URL from Step 2 (e.g., `https://obe-ml-service.onrender.com`) |
+   | `ML_TIMEOUT_MS` | `60000` (prevents timeouts when free-tier ML service wakes up) |
+   | `CORS_ORIGINS` | `https://your-frontend.vercel.app,http://localhost:5173` |
+   | `FRONTEND_URL` | `https://your-frontend.vercel.app` |
+   | `ADMIN_EMAIL` | `admin@mitsgwalior.in` |
+   | `ADMIN_PASSWORD` | Strong admin password (minimum 12 characters) |
+   | `ADMIN_NAME` | `System Administrator` |
+   | `GOOGLE_CLIENT_ID` | Your Google OAuth Client ID |
+   | `ALLOWED_EMAIL_DOMAIN` | `mitsgwalior.in,gmail.com` |
+   | `ENABLE_PASSWORD_LOGIN` | `true` |
+   | `SMTP_HOST` | `smtp.gmail.com` *(optional for email invitations)* |
+   | `SMTP_PORT` | `587` |
+   | `SMTP_USER` | Your SMTP username / email |
+   | `SMTP_PASS` | Your SMTP app password |
+   | `MAIL_FROM` | `"MITS OBE Platform" <noreply@mitsgwalior.in>` |
+5. Click **Deploy Web Service** and note your backend URL (e.g., `https://obe-backend.onrender.com`).
+
+---
+
+### Step 4: Frontend (Vercel)
+1. In [Vercel](https://vercel.com), click **Add New...** → **Project**.
+2. Import your GitHub repository.
+3. Configure project settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Set Environment Variables:
+   | Variable | Description / Example |
+   | :--- | :--- |
+   | `VITE_API_URL` | Deployed backend URL + `/api` (e.g., `https://obe-backend.onrender.com/api`) |
+   | `VITE_GOOGLE_CLIENT_ID` | Your Google OAuth Client ID |
+   | `VITE_ML_URL` | *(Optional)* Direct ML Service URL from Step 2 |
+5. Click **Deploy**. Vercel will build the frontend and apply the SPA rewrites configured in `frontend/vercel.json`.
+6. Once deployed, update `CORS_ORIGINS` and `FRONTEND_URL` on your Render backend service with the real Vercel URL.
 
 ---
 

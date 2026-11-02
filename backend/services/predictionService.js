@@ -190,15 +190,16 @@ class PredictionService {
       };
     }
 
-    // Call ML Service with graceful error handling
+    // Call ML Service with longer timeout (60s default) to accommodate Render sleeping free tier
     let mlResponseData;
     const mlUrl = this.getMlServiceUrl();
+    const mlTimeoutMs = Number(process.env.ML_TIMEOUT_MS) || 60000;
     try {
       const response = await fetch(`${mlUrl}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ instances: featureData.instances }),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(mlTimeoutMs),
       });
 
       if (!response.ok) {
@@ -206,11 +207,16 @@ class PredictionService {
       }
       mlResponseData = await response.json();
     } catch (err) {
-      // Graceful degradation when ML service is down/offline
+      // Graceful degradation when ML service is down/offline or waking up from sleep
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError' || err.code === 23;
+      const failureReason = isTimeout
+        ? `ML service is waking up / timed out after ${Math.round(mlTimeoutMs / 1000)}s`
+        : (err.cause?.code || err.code || err.message);
+
       return {
         mlServiceOnline: false,
         course: { _id: course._id, code: course.code, name: course.name },
-        message: `ML Prediction Service is currently unavailable (${err.cause?.code || err.code || err.message}). Early warning predictions cannot be calculated.`,
+        message: `ML Prediction Service is currently unavailable (${failureReason}). Early warning predictions cannot be calculated.`,
         data_source: 'Unavailable',
         predictions: null,
       };
@@ -321,8 +327,9 @@ class PredictionService {
   async getModelInfo() {
     try {
       const mlUrl = this.getMlServiceUrl();
+      const mlTimeoutMs = Number(process.env.ML_TIMEOUT_MS) || 60000;
       const response = await fetch(`${mlUrl}/model-info`, {
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(mlTimeoutMs),
       });
       if (!response.ok) {
         throw new Error(`ML Service responded with HTTP ${response.status}`);
@@ -330,9 +337,13 @@ class PredictionService {
       const data = await response.json();
       return { mlServiceOnline: true, ...data.data };
     } catch (err) {
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError' || err.code === 23;
+      const failureReason = isTimeout
+        ? 'ML service is waking up / timed out'
+        : (err.cause?.code || err.code || err.message);
       return {
         mlServiceOnline: false,
-        message: `ML Service is currently unavailable (${err.cause?.code || err.code || err.message})`,
+        message: `ML Service is currently unavailable (${failureReason})`,
       };
     }
   }
@@ -343,10 +354,11 @@ class PredictionService {
   async trainModel() {
     try {
       const mlUrl = this.getMlServiceUrl();
+      const trainTimeoutMs = Number(process.env.ML_TRAIN_TIMEOUT_MS) || 120000;
       const response = await fetch(`${mlUrl}/train`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(trainTimeoutMs),
       });
       if (!response.ok) {
         throw new Error(`ML Service responded with HTTP ${response.status}`);

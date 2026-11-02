@@ -196,15 +196,15 @@ export default function CurriculumOutcomesPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface border border-border p-6 rounded-2xl shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <div className="p-2.5 rounded-xl bg-accent-soft text-accent border border-teal-200">
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Curriculum Outcomes Framework</h1>
-              <p className="text-sm text-gray-400">
+              <h1 className="text-2xl font-serif font-bold text-ink tracking-tight">Curriculum Outcomes Framework</h1>
+              <p className="text-sm text-muted">
                 Official PEOs, NBA Graduate Attributes (PO1–PO12), and Program Specific Outcomes (PSOs)
               </p>
             </div>
@@ -213,11 +213,11 @@ export default function CurriculumOutcomesPage() {
 
         {/* Programme Selector */}
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <label className="text-sm font-medium text-gray-400 shrink-0">Programme:</label>
+          <label className="text-sm font-medium text-muted shrink-0">Programme:</label>
           <select
             value={selectedProgrammeId}
             onChange={(e) => setSelectedProgrammeId(e.target.value)}
-            className="w-full sm:w-64 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+            className="w-full sm:w-64 bg-paper border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink shadow-sm"
           >
             {programmes.map((p) => (
               <option key={p._id} value={p._id}>
@@ -230,33 +230,35 @@ export default function CurriculumOutcomesPage() {
 
       {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/40 text-red-300 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-status-below-soft border border-red-200 text-status-below text-sm flex items-center gap-3">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-status-attained-soft border border-emerald-200 text-status-attained text-sm flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('pos')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'pos'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                ? 'bg-ink text-paper shadow-sm'
+                : 'text-muted hover:text-ink hover:bg-paper'
             }`}
           >
             <Target className="w-4 h-4" />
             <span>Program Outcomes (POs)</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-mono tabular-nums ${
+              activeTab === 'pos' ? 'bg-paper/20 text-paper' : 'bg-paper border border-border text-muted'
+            }`}>
               {curriculumData?.pos?.length || 0}
             </span>
           </button>
@@ -265,13 +267,15 @@ export default function CurriculumOutcomesPage() {
             onClick={() => setActiveTab('psos')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'psos'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                ? 'bg-ink text-paper shadow-sm'
+                : 'text-muted hover:text-ink hover:bg-paper'
             }`}
           >
             <Award className="w-4 h-4" />
             <span>Program Specific Outcomes (PSOs)</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-mono tabular-nums ${
+              activeTab === 'psos' ? 'bg-paper/20 text-paper' : 'bg-paper border border-border text-muted'
+            }`}>
               {curriculumData?.psos?.length || 0}
             </span>
           </button>
@@ -280,13 +284,15 @@ export default function CurriculumOutcomesPage() {
             onClick={() => setActiveTab('peos')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'peos'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                ? 'bg-ink text-paper shadow-sm'
+                : 'text-muted hover:text-ink hover:bg-paper'
             }`}
           >
             <BookOpen className="w-4 h-4" />
             <span>Educational Objectives (PEOs)</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-mono tabular-nums ${
+              activeTab === 'peos' ? 'bg-paper/20 text-paper' : 'bg-paper border border-border text-muted'
+            }`}>
               {curriculumData?.peos?.length || 0}
             </span>
           </button>
@@ -295,7 +301,7 @@ export default function CurriculumOutcomesPage() {
         {canEdit && (
           <button
             onClick={() => handleOpenAddModal(activeTab === 'pos' ? 'PO' : activeTab === 'psos' ? 'PSO' : 'PEO')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink hover:bg-ink-dark text-paper text-sm font-semibold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add {activeTab === 'pos' ? 'PO' : activeTab === 'psos' ? 'PSO' : 'PEO'}</span>
@@ -305,7 +311,7 @@ export default function CurriculumOutcomesPage() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="p-12 text-center text-gray-400">Loading outcomes data...</div>
+        <div className="p-12 text-center text-muted font-mono">Loading outcomes data...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {/* TAB 1: POs */}
@@ -313,11 +319,11 @@ export default function CurriculumOutcomesPage() {
             curriculumData?.pos?.map((po) => (
               <div
                 key={po._id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
+                className="bg-surface border border-border rounded-2xl p-5 hover:border-ink/30 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-lg bg-accent-soft border border-teal-200 text-accent font-bold text-xs uppercase tracking-wider font-mono">
                       {po.code}
                     </span>
                     {canEdit && (
@@ -325,22 +331,22 @@ export default function CurriculumOutcomesPage() {
                         <button
                           onClick={() => handleOpenEditModal('PO', po)}
                           title="Edit PO"
-                          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+                          className="p-1.5 rounded-lg hover:bg-paper text-muted hover:text-ink transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete('PO', po)}
                           title="Delete PO"
-                          className="p-1.5 rounded-lg hover:bg-red-950/40 text-gray-400 hover:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-status-below-soft text-muted hover:text-status-below transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
                   </div>
-                  {po.title && <h3 className="font-semibold text-white text-base leading-snug">{po.title}</h3>}
-                  <p className="text-sm text-gray-300 leading-relaxed">{po.statement}</p>
+                  {po.title && <h3 className="font-serif font-semibold text-ink text-base leading-snug">{po.title}</h3>}
+                  <p className="text-sm text-ink/80 leading-relaxed">{po.statement}</p>
                 </div>
               </div>
             ))}
@@ -350,11 +356,11 @@ export default function CurriculumOutcomesPage() {
             curriculumData?.psos?.map((pso) => (
               <div
                 key={pso._id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
+                className="bg-surface border border-border rounded-2xl p-5 hover:border-ink/30 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-lg bg-status-attained-soft border border-emerald-200 text-status-attained font-bold text-xs uppercase tracking-wider font-mono">
                       {pso.code}
                     </span>
                     {canEdit && (
@@ -362,21 +368,21 @@ export default function CurriculumOutcomesPage() {
                         <button
                           onClick={() => handleOpenEditModal('PSO', pso)}
                           title="Edit PSO"
-                          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+                          className="p-1.5 rounded-lg hover:bg-paper text-muted hover:text-ink transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete('PSO', pso)}
                           title="Delete PSO"
-                          className="p-1.5 rounded-lg hover:bg-red-950/40 text-gray-400 hover:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-status-below-soft text-muted hover:text-status-below transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">{pso.statement}</p>
+                  <p className="text-sm text-ink/80 leading-relaxed">{pso.statement}</p>
                 </div>
               </div>
             ))}
@@ -386,11 +392,11 @@ export default function CurriculumOutcomesPage() {
             curriculumData?.peos?.map((peo) => (
               <div
                 key={peo._id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
+                className="bg-surface border border-border rounded-2xl p-5 hover:border-ink/30 transition-all flex flex-col justify-between group shadow-sm hover:shadow-md"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-lg bg-status-borderline-soft border border-amber-200 text-status-borderline font-bold text-xs uppercase tracking-wider font-mono">
                       {peo.code}
                     </span>
                     {canEdit && (
@@ -398,21 +404,21 @@ export default function CurriculumOutcomesPage() {
                         <button
                           onClick={() => handleOpenEditModal('PEO', peo)}
                           title="Edit PEO"
-                          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+                          className="p-1.5 rounded-lg hover:bg-paper text-muted hover:text-ink transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete('PEO', peo)}
                           title="Delete PEO"
-                          className="p-1.5 rounded-lg hover:bg-red-950/40 text-gray-400 hover:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-status-below-soft text-muted hover:text-status-below transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">{peo.statement}</p>
+                  <p className="text-sm text-ink/80 leading-relaxed">{peo.statement}</p>
                 </div>
               </div>
             ))}
@@ -421,18 +427,18 @@ export default function CurriculumOutcomesPage() {
 
       {/* Modal for Add / Edit */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
+          <div className="bg-surface border border-border rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-lg font-serif font-bold text-ink flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
                 <span>
                   {editingItem ? 'Edit' : 'Add'} {modalType}
                 </span>
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-gray-400 hover:text-white text-lg font-bold"
+                className="text-muted hover:text-ink text-lg font-bold transition-colors"
               >
                 ✕
               </button>
@@ -440,7 +446,7 @@ export default function CurriculumOutcomesPage() {
 
             <form onSubmit={handleSaveModal} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Code *
                 </label>
                 <input
@@ -449,13 +455,13 @@ export default function CurriculumOutcomesPage() {
                   placeholder={modalType === 'PO' ? 'e.g. PO1' : modalType === 'PSO' ? 'e.g. PSO-1' : 'e.g. PEO-I'}
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-paper border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink shadow-inner font-mono"
                 />
               </div>
 
               {modalType === 'PO' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                     Title / Graduate Attribute
                   </label>
                   <input
@@ -463,13 +469,13 @@ export default function CurriculumOutcomesPage() {
                     placeholder="e.g. Engineering Knowledge"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-paper border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink shadow-inner"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">
                   Statement *
                 </label>
                 <textarea
@@ -478,22 +484,22 @@ export default function CurriculumOutcomesPage() {
                   placeholder={`Detailed statement defining this ${modalType}...`}
                   value={formData.statement}
                   onChange={(e) => setFormData({ ...formData, statement: e.target.value })}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-paper border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink shadow-inner"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 text-sm font-medium"
+                  className="px-4 py-2 rounded-xl bg-paper border border-border text-ink hover:bg-surface text-sm font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-ink hover:bg-ink-dark text-paper text-sm font-semibold shadow-sm disabled:opacity-50 transition-colors"
                 >
                   {submitting ? 'Saving...' : editingItem ? 'Save Changes' : 'Create'}
                 </button>

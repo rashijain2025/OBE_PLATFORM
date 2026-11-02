@@ -12,6 +12,7 @@ const PO = require('./PO');
 const PSO = require('./PSO');
 const COPOMapping = require('./COPOMapping');
 const COPSOMapping = require('./COPSOMapping');
+const Invitation = require('./Invitation');
 
 module.exports = {
   User,
@@ -28,4 +29,5 @@ module.exports = {
   PSO,
   COPOMapping,
   COPSOMapping,
+  Invitation,
 };
