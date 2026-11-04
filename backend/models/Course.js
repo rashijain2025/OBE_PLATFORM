@@ -37,6 +37,8 @@ const courseSchema = new mongoose.Schema(
     credits: {
       type: Number,
       default: 3,
+      min: [1, 'Credits must be between 1 and 4'],
+      max: [4, 'Credits must be between 1 and 4'],
     },
   },
   {

@@ -12,33 +12,52 @@ import {
 import { useToast, ToastContainer } from '../../components/ui/Toast';
 import { Plus, Trash2, Edit2, RefreshCw, BookOpen } from 'lucide-react';
 
+const CREDIT_OPTIONS = [1, 2, 3, 4];
+
+// UG (B.Tech) runs 8 semesters, PG (M.Tech) 4; other levels follow their duration
+function semesterCount(programme) {
+  if (!programme) return 0;
+  if (programme.level === 'UG') return 8;
+  if (programme.level === 'PG') return 4;
+  return Math.max(1, (programme.durationYears || 4) * 2);
+}
+
+const EMPTY_COURSE = { programme: '', faculty: '', name: '', code: '', credits: '', semester: '', academicYear: '2025-2026' };
+
 function CourseModal({ open, course, programmes, facultyList, onClose, onSuccess, showToast }) {
   const isEdit = !!course;
-  const [form, setForm] = useState({
-    code: '', name: '', semester: 1, programme: '', faculty: '', academicYear: '2025-2026', credits: 3,
-  });
+  const [form, setForm] = useState(EMPTY_COURSE);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (course) {
       setForm({
-        code: course.code,
-        name: course.name,
-        semester: course.semester,
         programme: course.programme?._id || '',
         faculty: course.faculty?._id || '',
+        name: course.name,
+        code: course.code,
+        credits: course.credits ?? '',
+        semester: course.semester ?? '',
         academicYear: course.academicYear,
-        credits: course.credits,
       });
     } else {
-      setForm({ code: '', name: '', semester: 1, programme: '', faculty: '', academicYear: '2025-2026', credits: 3 });
+      setForm(EMPTY_COURSE);
     }
   }, [course, open]);
 
+  const selectedProgramme = programmes.find((p) => p._id === form.programme);
+  const maxSemester = semesterCount(selectedProgramme);
+
+  // A semester that does not exist in the newly chosen programme is cleared
+  const pickProgramme = (programmeId) => {
+    const max = semesterCount(programmes.find((p) => p._id === programmeId));
+    setForm((prev) => ({ ...prev, programme: programmeId, semester: Number(prev.semester) <= max ? prev.semester : '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.code || !form.name || !form.programme || !form.faculty || !form.academicYear) {
-      showToast('All fields except credits are required', 'error');
+    if (!form.programme || !form.faculty || !form.name || !form.code || !form.credits || !form.semester || !form.academicYear) {
+      showToast('Please fill in every field', 'error');
       return;
     }
     setSaving(true);
@@ -56,12 +75,7 @@ function CourseModal({ open, course, programmes, facultyList, onClose, onSuccess
   return (
     <Modal open={open} title={isEdit ? 'Edit Course' : 'New Course'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FormInput label="Course Code *" id="c-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CS301" />
-          <FormInput label="Academic Year *" id="c-year" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} placeholder="2025-2026" />
-        </div>
-        <FormInput label="Course Name *" id="c-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Data Structures & Algorithms" />
-        <FormSelect label="Programme *" id="c-prog" value={form.programme} onChange={(e) => setForm({ ...form, programme: e.target.value })}>
+        <FormSelect label="Programme *" id="c-prog" value={form.programme} onChange={(e) => pickProgramme(e.target.value)}>
           <option value="">— Select Programme —</option>
           {programmes.map((p) => <option key={p._id} value={p._id}>{p.name} ({p.code})</option>)}
         </FormSelect>
@@ -69,10 +83,27 @@ function CourseModal({ open, course, programmes, facultyList, onClose, onSuccess
           <option value="">— Select Faculty —</option>
           {facultyList.map((f) => <option key={f._id} value={f._id}>{f.name} ({f.email})</option>)}
         </FormSelect>
+        <FormInput label="Course Name *" id="c-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Data Structures & Algorithms" />
+        <FormInput label="Course Code *" id="c-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CS301" />
         <div className="grid grid-cols-2 gap-3">
-          <FormInput label="Semester *" id="c-sem" type="number" min={1} max={12} value={form.semester} onChange={(e) => setForm({ ...form, semester: Number(e.target.value) })} />
-          <FormInput label="Credits" id="c-cred" type="number" min={1} max={10} value={form.credits} onChange={(e) => setForm({ ...form, credits: Number(e.target.value) })} />
+          <FormSelect label="Credits *" id="c-cred" value={form.credits} onChange={(e) => setForm({ ...form, credits: Number(e.target.value) || '' })}>
+            <option value="">— Select —</option>
+            {CREDIT_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </FormSelect>
+          <FormSelect
+            label="Semester *"
+            id="c-sem"
+            value={form.semester}
+            onChange={(e) => setForm({ ...form, semester: Number(e.target.value) || '' })}
+            disabled={!selectedProgramme}
+          >
+            <option value="">{selectedProgramme ? '— Select —' : 'Choose programme first'}</option>
+            {Array.from({ length: maxSemester }, (_, i) => i + 1).map((s) => (
+              <option key={s} value={s}>Semester {s}</option>
+            ))}
+          </FormSelect>
         </div>
+        <FormInput label="Academic Year *" id="c-year" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} placeholder="2025-2026" />
         <div className="flex gap-3 justify-end pt-2">
           <GhostButton onClick={onClose}>Cancel</GhostButton>
           <PrimaryButton type="submit" disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}</PrimaryButton>
@@ -94,6 +125,8 @@ export default function CoursesPage() {
   const [modal, setModal] = useState({ open: false, course: null });
 
   const canEdit = user?.role === 'admin' || user?.role === 'coordinator';
+  // Faculty only see their own courses, so the faculty column would just repeat their name
+  const showFacultyColumn = user?.role !== 'faculty';
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -173,7 +206,9 @@ export default function CoursesPage() {
                 <tr className="border-b border-border bg-paper/50">
                   <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Code</th>
                   <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Name</th>
-                  <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden sm:table-cell">Faculty</th>
+                  {showFacultyColumn && (
+                    <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden sm:table-cell">Faculty</th>
+                  )}
                   <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">Sem</th>
                   <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden lg:table-cell">Year</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-muted uppercase">Actions</th>
@@ -188,7 +223,9 @@ export default function CoursesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 font-medium text-ink">{c.name}</td>
-                    <td className="px-4 py-3 text-muted hidden sm:table-cell">{c.faculty?.name || '—'}</td>
+                    {showFacultyColumn && (
+                      <td className="px-4 py-3 text-muted hidden sm:table-cell">{c.faculty?.name || '—'}</td>
+                    )}
                     <td className="px-4 py-3 text-muted hidden md:table-cell">Sem {c.semester}</td>
                     <td className="px-4 py-3 text-muted hidden lg:table-cell">{c.academicYear}</td>
                     <td className="px-4 py-3">

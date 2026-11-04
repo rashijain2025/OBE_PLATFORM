@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
-  listDepartmentsApi, createDepartmentApi, updateDepartmentApi, deleteDepartmentApi,
+  listDepartmentsApi, createDepartmentApi, updateDepartmentApi, deleteDepartmentApi, getSchoolsCatalogApi,
   listProgrammesApi, createProgrammeApi, updateProgrammeApi, deleteProgrammeApi,
   listUsersApi,
 } from '../../api/admin';
@@ -10,13 +10,100 @@ import {
   SearchInput, FormInput, FormSelect, FormInput as FI, Modal, Spinner, EmptyState,
 } from '../../components/ui/AdminUI';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
-import { Plus, Trash2, Edit2, Building2, Award, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit2, Building2, Award, RefreshCw, ChevronDown, Check } from 'lucide-react';
+
+// ─── Add School / Centre: pick from the fixed list, added on click ───────────
+function AddSchoolMenu({ catalog, onAdded, showToast }) {
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (e) => {
+      if (e.type === 'keydown' ? e.key === 'Escape' : !menuRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
+  const remaining = catalog.filter((c) => !c.existingId).length;
+
+  const add = async (entry) => {
+    setAdding(entry.name);
+    try {
+      await createDepartmentApi({ name: entry.name, code: entry.code });
+      showToast(`${entry.name} added`, 'success');
+      onAdded();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Could not add', 'error');
+    } finally {
+      setAdding(null);
+    }
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <PrimaryButton onClick={() => setOpen((o) => !o)}>
+        <Plus className="w-4 h-4" /> Add School / Centre <ChevronDown className="w-3.5 h-3.5" />
+      </PrimaryButton>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl py-1"
+        >
+          <div className="px-3 py-2 text-[11px] text-muted border-b border-border">
+            {remaining > 0 ? `Click to add · ${remaining} of ${catalog.length} not added yet` : 'All Schools / Centres have been added'}
+          </div>
+          {catalog.map((c) => {
+            const added = Boolean(c.existingId);
+            return (
+              <button
+                key={c.name}
+                type="button"
+                role="menuitem"
+                disabled={added || adding !== null}
+                onClick={() => add(c)}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
+                  added ? 'opacity-40 cursor-default' : 'text-ink hover:bg-paper cursor-pointer'
+                }`}
+              >
+                <span>{c.name}</span>
+                {added ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-status-attained shrink-0">
+                    <Check className="w-3.5 h-3.5" /> Added
+                  </span>
+                ) : adding === c.name ? (
+                  <span className="text-[11px] text-muted shrink-0">Adding…</span>
+                ) : (
+                  <span className="text-[11px] font-mono text-muted shrink-0">{c.code}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Department Form Modal ────────────────────────────────────────────────────
-function DeptModal({ open, dept, coordinators, onClose, onSuccess, showToast }) {
+function DeptModal({ open, dept, catalog, coordinators, onClose, onSuccess, showToast }) {
   const isEdit = !!dept;
   const [form, setForm] = useState({ name: '', code: '', description: '', headOfDepartment: '' });
   const [saving, setSaving] = useState(false);
+
+  // Names come from the institute's fixed list; ones used by another record are shown but disabled
+  const isTaken = (c) => c.existingId && c.existingId !== dept?._id;
+
+  const pickName = (name) => {
+    const entry = catalog.find((c) => c.name === name);
+    setForm((prev) => ({ ...prev, name, code: entry ? entry.code : prev.code }));
+  };
 
   useEffect(() => {
     if (dept) setForm({ name: dept.name, code: dept.code, description: dept.description || '', headOfDepartment: dept.headOfDepartment?._id || '' });
@@ -30,7 +117,7 @@ function DeptModal({ open, dept, coordinators, onClose, onSuccess, showToast }) 
     try {
       if (isEdit) await updateDepartmentApi(dept._id, form);
       else await createDepartmentApi(form);
-      showToast(isEdit ? 'Department updated' : 'Department created', 'success');
+      showToast(isEdit ? 'School / Centre updated' : 'School / Centre created', 'success');
       onSuccess();
       onClose();
     } catch (err) {
@@ -39,12 +126,19 @@ function DeptModal({ open, dept, coordinators, onClose, onSuccess, showToast }) 
   };
 
   return (
-    <Modal open={open} title={isEdit ? 'Edit Department' : 'New Department'} onClose={onClose}>
+    <Modal open={open} title={isEdit ? 'Edit School / Centre' : 'New School / Centre'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormInput label="Department Name *" id="dept-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Dept. of Information Technology" />
+        <FormSelect label="School / Centre *" id="dept-name" value={form.name} onChange={(e) => pickName(e.target.value)}>
+          <option value="">— Select School / Centre —</option>
+          {catalog.map((c) => (
+            <option key={c.name} value={c.name} disabled={isTaken(c)}>
+              {c.name}{isTaken(c) ? ' (already added)' : ''}
+            </option>
+          ))}
+        </FormSelect>
         <FormInput label="Code *" id="dept-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="IT" />
         <FormInput label="Description" id="dept-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description" />
-        <FormSelect label="Head of Department" id="dept-hod" value={form.headOfDepartment} onChange={(e) => setForm({ ...form, headOfDepartment: e.target.value })}>
+        <FormSelect label="Head of School / Centre" id="dept-hod" value={form.headOfDepartment} onChange={(e) => setForm({ ...form, headOfDepartment: e.target.value })}>
           <option value="">— None —</option>
           {coordinators.map((c) => <option key={c._id} value={c._id}>{c.name} ({c.email})</option>)}
         </FormSelect>
@@ -70,7 +164,7 @@ function ProgModal({ open, prog, departments, onClose, onSuccess, showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.code.trim() || !form.department) { showToast('Name, code and department are required', 'error'); return; }
+    if (!form.name.trim() || !form.code.trim() || !form.department) { showToast('Name, code and school / centre are required', 'error'); return; }
     setSaving(true);
     try {
       if (isEdit) await updateProgrammeApi(prog._id, form);
@@ -88,8 +182,8 @@ function ProgModal({ open, prog, departments, onClose, onSuccess, showToast }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput label="Programme Name *" id="prog-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="B.Tech Information Technology" />
         <FormInput label="Code *" id="prog-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="BTECH-IT" />
-        <FormSelect label="Department *" id="prog-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-          <option value="">— Select Department —</option>
+        <FormSelect label="School / Centre *" id="prog-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+          <option value="">— Select School / Centre —</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div className="grid grid-cols-2 gap-3">
@@ -114,6 +208,7 @@ export default function DepartmentsPage() {
   const [depts, setDepts] = useState([]);
   const [progs, setProgs] = useState([]);
   const [coordinators, setCoordinators] = useState([]);
+  const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptModal, setDeptModal] = useState({ open: false, dept: null });
@@ -123,14 +218,16 @@ export default function DepartmentsPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [dRes, pRes, uRes] = await Promise.all([
+      const [dRes, pRes, uRes, cRes] = await Promise.all([
         listDepartmentsApi().catch(() => ({ data: [] })),
         listProgrammesApi().catch(() => ({ data: [] })),
         listUsersApi({ role: 'coordinator', limit: 100 }).catch(() => ({ data: { users: [] } })),
+        getSchoolsCatalogApi().catch(() => ({ data: [] })),
       ]);
       setDepts(dRes.data || []);
       setProgs(pRes.data || []);
       setCoordinators(uRes.data?.users || []);
+      setCatalog(cRes.data || []);
     } catch (err) {
       showToast('Failed to load data', 'error');
     } finally {
@@ -141,10 +238,10 @@ export default function DepartmentsPage() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleDeleteDept = async (d) => {
-    if (!confirm(`Delete department "${d.name}"?`)) return;
+    if (!confirm(`Delete school / centre "${d.name}"?`)) return;
     try {
       await deleteDepartmentApi(d._id);
-      showToast('Department deleted', 'success');
+      showToast('School / Centre deleted', 'success');
       fetchAll();
     } catch (err) { showToast(err.response?.data?.message || 'Failed', 'error'); }
   };
@@ -172,13 +269,13 @@ export default function DepartmentsPage() {
       <ToastContainer toasts={toasts} dismiss={dismiss} />
 
       <PageHeader
-        title="Departments & Programmes"
-        subtitle={`${depts.length} departments · ${progs.length} programmes`}
+        title="Schools / Centres & Programmes"
+        subtitle={`${depts.length} schools / centres · ${progs.length} programmes`}
         action={isAdmin && (
           <div className="flex gap-2">
             <GhostButton onClick={fetchAll}><RefreshCw className="w-3.5 h-3.5" /></GhostButton>
             {tab === 'departments'
-              ? <PrimaryButton onClick={() => setDeptModal({ open: true, dept: null })}><Plus className="w-4 h-4" /> New Department</PrimaryButton>
+              ? <AddSchoolMenu catalog={catalog} onAdded={fetchAll} showToast={showToast} />
               : <PrimaryButton onClick={() => setProgModal({ open: true, prog: null })}><Plus className="w-4 h-4" /> New Programme</PrimaryButton>
             }
           </div>
@@ -187,7 +284,7 @@ export default function DepartmentsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
-        {[{ id: 'departments', label: 'Departments', icon: Building2 }, { id: 'programmes', label: 'Programmes', icon: Award }].map(({ id, label, icon: Icon }) => (
+        {[{ id: 'departments', label: 'Schools / Centres', icon: Building2 }, { id: 'programmes', label: 'Programmes', icon: Award }].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -205,7 +302,7 @@ export default function DepartmentsPage() {
           {/* Departments Table */}
           {tab === 'departments' && (
             <Card>
-              {filteredDepts.length === 0 ? <EmptyState message="No departments found" /> : (
+              {filteredDepts.length === 0 ? <EmptyState message="No schools / centres found" /> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -253,7 +350,7 @@ export default function DepartmentsPage() {
                       <tr className="border-b border-border bg-paper/50">
                         <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Name</th>
                         <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Code</th>
-                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">Department</th>
+                        <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden md:table-cell">School / Centre</th>
                         <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 hidden lg:table-cell">Level</th>
                         {isAdmin && <th className="px-4 py-3" />}
                       </tr>
@@ -293,6 +390,7 @@ export default function DepartmentsPage() {
       <DeptModal
         open={deptModal.open}
         dept={deptModal.dept}
+        catalog={catalog}
         coordinators={coordinators}
         onClose={() => setDeptModal({ open: false, dept: null })}
         onSuccess={fetchAll}

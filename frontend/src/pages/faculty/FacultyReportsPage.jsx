@@ -3,9 +3,10 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { listCoursesApi } from '../../api/admin';
 import { getFacultyReportApi, exportAttainmentCSVUrl } from '../../api/attainment';
 import {
-  PageHeader, Card, FormSelect, PrimaryButton, GhostButton, Spinner, EmptyState
+  PageHeader, Card, FormSelect, PrimaryButton, GhostButton, Spinner, EmptyState, InfoTip
 } from '../../components/ui/AdminUI';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
+import CourseReportButton from '../../components/course/CourseReportButton';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   ReferenceLine, Cell, CartesianGrid
@@ -88,6 +89,7 @@ export default function FacultyReportsPage() {
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>CO Matrix</span>
               </Link>
+              <CourseReportButton courseId={selectedCourseId} target={target} courseCode={course?.code} showToast={showToast} />
               <a
                 href={exportAttainmentCSVUrl(selectedCourseId, target)}
                 download
@@ -123,7 +125,10 @@ export default function FacultyReportsPage() {
 
           <div>
             <label className="text-xs font-medium text-muted mb-1 flex items-center justify-between">
-              <span>Target Attainment Threshold (%)</span>
+              <span className="inline-flex items-center gap-1.5">
+                Target Attainment Threshold (%)
+                <InfoTip text="This one number is used twice: a student attains a CO if they score at least this % of the marks on that CO's questions, and the CO counts as attained for the class if at least this % of evaluated students attain it." />
+              </span>
               <span className="text-muted/70 text-[10px]">Default 40%</span>
             </label>
             <div className="relative">

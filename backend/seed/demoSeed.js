@@ -69,6 +69,9 @@ async function seedDemoData() {
           role: 'student',
           rollNo,
           department: itDept._id,
+          programme: itProgramme._id,
+          batch: '2024',
+          section: i < 15 ? 'A' : 'B',
           isActive: true,
         },
         { upsert: true, new: true }

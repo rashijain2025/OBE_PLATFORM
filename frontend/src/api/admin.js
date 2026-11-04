@@ -28,6 +28,9 @@ export const bulkImportStudentsApi = (data) =>
 export const listDepartmentsApi = () =>
   api.get('/departments').then((r) => r.data);
 
+export const getSchoolsCatalogApi = () =>
+  api.get('/departments/catalog').then((r) => r.data);
+
 export const getDepartmentApi = (id) =>
   api.get(`/departments/${id}`).then((r) => r.data);
 
@@ -39,6 +42,23 @@ export const updateDepartmentApi = (id, data) =>
 
 export const deleteDepartmentApi = (id) =>
   api.delete(`/departments/${id}`).then((r) => r.data);
+
+export const getObeTargetsApi = (departmentId) =>
+  api.get(`/departments/${departmentId}/obe-targets`).then((r) => r.data);
+
+export const updateObeTargetsApi = (departmentId, data) =>
+  api.put(`/departments/${departmentId}/obe-targets`, data).then((r) => r.data);
+
+// ─── Class Lists ─────────────────────────────────────────────────────────────
+
+export const listClassListsApi = () =>
+  api.get('/users/class-lists').then((r) => r.data);
+
+export const listClassStudentsApi = (params) =>
+  api.get('/users/class-lists/students', { params }).then((r) => r.data);
+
+export const uploadClassListApi = (data) =>
+  api.post('/users/class-lists', data).then((r) => r.data);
 
 // ─── Programmes ──────────────────────────────────────────────────────────────
 

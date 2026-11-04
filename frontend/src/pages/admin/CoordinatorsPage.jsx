@@ -6,6 +6,7 @@ import {
   deleteCoordinatorApi,
 } from '../../api/coordinators';
 import { listDepartmentsApi } from '../../api/admin';
+import { useAllowedEmailDomains, describeDomains, isAllowedEmail } from '../../utils/emailDomains';
 import api from '../../api/axios';
 import {
   PageHeader, Card, PrimaryButton, DangerButton, GhostButton,
@@ -15,6 +16,7 @@ import { useToast, ToastContainer } from '../../components/ui/Toast';
 import { UserCheck, Plus, Edit2, Trash2, Shield, AlertTriangle, Building2, BookOpen } from 'lucide-react';
 
 export default function CoordinatorsPage() {
+  const allowedDomains = useAllowedEmailDomains();
   const [coordinators, setCoordinators] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [programmes, setProgrammes] = useState([]);
@@ -64,7 +66,7 @@ export default function CoordinatorsPage() {
 
       <PageHeader
         title="Programme Coordinators"
-        subtitle="Pre-register OBE Coordinators by @mitsgwalior.in email to grant Google sign-in access and assign academic programmes."
+        subtitle={`Pre-register OBE Coordinators by ${describeDomains(allowedDomains)} email to grant Google sign-in access and assign academic programmes.`}
         action={
           <PrimaryButton onClick={() => setCreateModalOpen(true)}>
             <Plus className="w-4 h-4" />
@@ -78,7 +80,7 @@ export default function CoordinatorsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search by name, email, department..."
+            placeholder="Search by name, email, school / centre..."
           />
           <div className="text-xs text-muted">
             Showing <strong className="text-ink">{filteredCoordinators.length}</strong> coordinator(s)
@@ -91,7 +93,7 @@ export default function CoordinatorsPage() {
           <EmptyState
             icon={UserCheck}
             title="No coordinators registered"
-            description="Add your first programme coordinator with their @mitsgwalior.in email to enable Google OAuth access."
+            description={`Add your first programme coordinator with their ${describeDomains(allowedDomains)} email to enable Google sign-in.`}
             action={
               <PrimaryButton onClick={() => setCreateModalOpen(true)}>
                 <Plus className="w-4 h-4" />
@@ -105,7 +107,7 @@ export default function CoordinatorsPage() {
               <thead>
                 <tr className="border-b border-border bg-paper text-xs uppercase tracking-wider text-muted">
                   <th className="py-3 px-4 font-semibold">Coordinator</th>
-                  <th className="py-3 px-4 font-semibold">Department</th>
+                  <th className="py-3 px-4 font-semibold">School / Centre</th>
                   <th className="py-3 px-4 font-semibold">Assigned Programme</th>
                   <th className="py-3 px-4 font-semibold">Status</th>
                   <th className="py-3 px-4 font-semibold text-right">Actions</th>
@@ -253,15 +255,17 @@ function CoordinatorModal({
   const [saving, setSaving] = useState(false);
   const [domainWarning, setDomainWarning] = useState('');
 
+  const allowedDomains = useAllowedEmailDomains();
+
   // Validate domain on email change
   useEffect(() => {
     const trimmed = email.trim().toLowerCase();
-    if (trimmed && !trimmed.endsWith('@mitsgwalior.in')) {
-      setDomainWarning('Domain does not end with @mitsgwalior.in. Staff must sign in via institutional Google account.');
+    if (trimmed.includes('@') && !isAllowedEmail(trimmed, allowedDomains)) {
+      setDomainWarning(`Not a ${describeDomains(allowedDomains)} address. Google sign-in will be refused for it.`);
     } else {
       setDomainWarning('');
     }
-  }, [email]);
+  }, [email, allowedDomains]);
 
   // Filter programmes by selected department
   const availableProgrammes = department
@@ -341,7 +345,7 @@ function CoordinatorModal({
 
         <div>
           <FormInput
-            label="Institutional Email (@mitsgwalior.in) *"
+            label={`Email (${describeDomains(allowedDomains)}) *`}
             id="coord-email"
             type="email"
             value={email}
@@ -358,7 +362,7 @@ function CoordinatorModal({
         </div>
 
         <FormSelect
-          label="Department *"
+          label="School / Centre *"
           id="coord-dept"
           value={department}
           onChange={(e) => {
@@ -367,7 +371,7 @@ function CoordinatorModal({
           }}
           required
         >
-          <option value="">Select Department...</option>
+          <option value="">Select School / Centre...</option>
           {departments.map((d) => (
             <option key={d._id} value={d._id}>
               {d.name} ({d.code})
@@ -384,7 +388,7 @@ function CoordinatorModal({
             required
             disabled={!department}
           >
-            <option value="">{department ? 'Select Programme...' : 'Select Department first'}</option>
+            <option value="">{department ? 'Select Programme...' : 'Select School / Centre first'}</option>
             {availableProgrammes.map((p) => {
               const conflict = getProgrammeCoordinatorInfo(p._id);
               return (

@@ -157,6 +157,16 @@ describe('Phase 3 Faculty Course Setup Tests', () => {
       expect(res.body.success).toBe(false);
     });
 
+    it('rejects CO codes beyond CO5 (max 5 COs per course)', async () => {
+      const res = await request(app)
+        .post('/api/cos')
+        .set('Authorization', `Bearer ${facultyAToken}`)
+        .send({ courseId: courseA._id, code: 'CO6', statement: 'One CO too many' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/at most 5/);
+    });
+
     it('Faculty A can create COs for Course A', async () => {
       const res1 = await request(app)
         .post('/api/cos')
@@ -359,6 +369,48 @@ describe('Phase 3 Faculty Course Setup Tests', () => {
       expect(res.body.totalMarks).toBe(30);
       expect(res.body.warning).toBeNull();
       expect(res.body.data[0].co.code).toBeDefined();
+      expect(res.body.data[0].cos.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('A question can be mapped to several COs at once', async () => {
+      const res = await request(app)
+        .post('/api/questions')
+        .set('Authorization', `Bearer ${facultyAToken}`)
+        .send({ assessmentId: assessmentA1._id, label: 'Q_MULTI', maxMarks: 5, coIds: [coA1._id, coA2._id] });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.cos.map((c) => c.code).sort()).toEqual(['CO1', 'CO2']);
+      expect(res.body.data.co.code).toBe('CO1');
+    });
+
+    it('Saving a paper keeps several ticked COs per question and rejects none ticked', async () => {
+      const list = await request(app)
+        .get(`/api/questions?assessmentId=${assessmentA1._id}`)
+        .set('Authorization', `Bearer ${facultyAToken}`);
+      const rows = list.body.data.map((q) => ({
+        _id: q._id,
+        label: q.label,
+        maxMarks: q.maxMarks,
+        coIds: q.label === 'Q_MULTI' ? [coA1._id, coA2._id] : q.cos.map((c) => c._id),
+      }));
+
+      const ok = await request(app)
+        .put('/api/questions/paper')
+        .set('Authorization', `Bearer ${facultyAToken}`)
+        .send({ assessmentId: assessmentA1._id, questions: rows });
+      expect(ok.status).toBe(200);
+      const multi = ok.body.data.questions.find((q) => q.label === 'Q_MULTI');
+      expect(multi.cos.map((c) => c.code).sort()).toEqual(['CO1', 'CO2']);
+
+      const bad = await request(app)
+        .put('/api/questions/paper')
+        .set('Authorization', `Bearer ${facultyAToken}`)
+        .send({ assessmentId: assessmentA1._id, questions: rows.map((r) => (r.label === 'Q_MULTI' ? { ...r, coIds: [] } : r)) });
+      expect(bad.status).toBe(400);
+      expect(bad.body.message).toMatch(/tick at least one CO/);
+
+      // Clean up so later counts in this suite are unchanged
+      await Question.deleteOne({ assessment: assessmentA1._id, label: 'Q_MULTI' });
     });
   });
 

@@ -1,4 +1,8 @@
-const { Course, CourseOutcome, Question, CourseEnrollment, StudentMarks } = require('../models');
+const xlsx = require('xlsx');
+const {
+  Course, CourseOutcome, Question, CourseEnrollment, StudentMarks,
+  Assessment, PO, PSO, COPOMapping, COPSOMapping,
+} = require('../models');
 
 class AttainmentService {
   async verifyCourseAccess(courseId, user) {
@@ -59,7 +63,8 @@ class AttainmentService {
     // 5. Calculate attainment per Course Outcome
     const cosAttainment = outcomes.map((co) => {
       const coIdStr = String(co._id);
-      const coQuestions = questions.filter((q) => String(q.co) === coIdStr);
+      // A question mapped to several COs counts in full towards each of them
+      const coQuestions = questions.filter((q) => Question.coIdsOf(q).includes(coIdStr));
       const mappedQuestionsCount = coQuestions.length;
       const coMaxMarks = coQuestions.reduce((sum, q) => sum + q.maxMarks, 0);
 
@@ -310,6 +315,168 @@ class AttainmentService {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * One-click course report as an Excel workbook: summary, CO attainment, CO-PO/PSO matrix,
+   * question papers, student-wise CO scores and a remarks sheet for below-target COs.
+   */
+  async generateCourseReportWorkbook(courseId, target = 40, user = null) {
+    const data = await this.calculateCourseCOAttainment(courseId, target, user);
+    const course = data.course;
+    const programmeId = course.programme?._id || course.programme;
+
+    const [pos, psos, poMaps, psoMaps, assessments, questions] = await Promise.all([
+      PO.find({ programme: programmeId }),
+      PSO.find({ programme: programmeId }),
+      COPOMapping.find({ course: courseId }),
+      COPSOMapping.find({ course: courseId }),
+      Assessment.find({ course: courseId }).sort({ date: 1, createdAt: 1 }),
+      Question.find({ course: courseId }).populate('cos', 'code').populate('co', 'code'),
+    ]);
+    const byCode = (a, b) => a.code.localeCompare(b.code, undefined, { numeric: true });
+    pos.sort(byCode);
+    psos.sort(byCode);
+
+    const pct = (v) => (v === null || v === undefined ? 'N/A' : v);
+    const sheets = [];
+
+    // 1. Summary
+    sheets.push({
+      name: 'Summary',
+      widths: [28, 60],
+      rows: [
+        ['COURSE ATTAINMENT REPORT'],
+        [],
+        ['Course Code', course.code],
+        ['Course Name', course.name],
+        ['Programme', course.programme?.name || ''],
+        ['Academic Year', course.academicYear],
+        ['Semester', course.semester],
+        ['Credits', course.credits],
+        ['Faculty', course.faculty?.name || ''],
+        [],
+        ['Attainment Threshold (%)', data.targetThreshold],
+        ['Students Enrolled', data.totalEnrolledStudents],
+        ['Course Outcomes', data.totalCourseOutcomes],
+        ['COs Evaluated', data.evaluatedCOsCount],
+        ['COs Attained', data.attainedCOsCount],
+        ['COs Below Target', data.belowTargetCOsCount],
+        ['Average CO Attainment (%)', pct(data.averageAttainment)],
+        ['Overall Status', data.overallStatus],
+        [],
+        ['Generated On', new Date().toLocaleString('en-IN')],
+        [
+          'Method',
+          `A student attains a CO when they score at least ${data.targetThreshold}% of that CO's marks; ` +
+            `a CO is attained when at least ${data.targetThreshold}% of evaluated students attain it. ` +
+            'Absent and not-entered marks are excluded.',
+        ],
+      ],
+    });
+
+    // 2. CO attainment
+    sheets.push({
+      name: 'CO Attainment',
+      widths: [8, 16, 60, 10, 10, 11, 11, 14, 12, 14, 9],
+      rows: [
+        ['CO', 'Bloom Level', 'Statement', 'Questions', 'Max Marks', 'Evaluated', 'Attained', 'Attainment (%)', 'Threshold (%)', 'Status', 'Gap (%)'],
+        ...data.cos.map((co) => [
+          co.code,
+          co.bloomLevel || '',
+          co.statement || '',
+          co.mappedQuestionsCount,
+          co.maxMarks,
+          co.studentsEvaluated,
+          co.studentsAttained,
+          pct(co.classAttainment),
+          co.targetThreshold,
+          co.status,
+          co.gap || 0,
+        ]),
+      ],
+    });
+
+    // 3. CO-PO / CO-PSO matrix with the average strength per outcome
+    const strength = new Map();
+    for (const m of poMaps) strength.set(`${m.courseOutcome}|${m.programOutcome}`, m.correlationLevel);
+    for (const m of psoMaps) strength.set(`${m.courseOutcome}|${m.programSpecificOutcome}`, m.correlationLevel);
+    const outcomes = [...pos, ...psos];
+    const matrixRows = data.cos.map((co) => [
+      co.code,
+      ...outcomes.map((o) => strength.get(`${co.coId}|${o._id}`) || ''),
+    ]);
+    const averages = outcomes.map((o, i) => {
+      const vals = matrixRows.map((r) => r[i + 1]).filter((v) => v !== '');
+      return vals.length ? Number((vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2)) : '';
+    });
+    sheets.push({
+      name: 'CO-PO Matrix',
+      widths: [10, ...outcomes.map(() => 7)],
+      rows: [
+        ['CO', ...outcomes.map((o) => o.code)],
+        ...matrixRows,
+        ['Average', ...averages],
+        [],
+        ['Strength: 1 = Low, 2 = Medium, 3 = High. Blank = not mapped.'],
+      ],
+    });
+
+    // 4. Question papers
+    const naturalLabel = (a, b) => a.label.localeCompare(b.label, undefined, { numeric: true });
+    const paperRows = [['Assessment', 'Assessment Max', 'Question', 'Marks', 'CO']];
+    for (const a of assessments) {
+      const qs = questions.filter((q) => String(q.assessment) === String(a._id)).sort(naturalLabel);
+      if (qs.length === 0) paperRows.push([a.name, a.maxMarks, '(no questions)', '', '']);
+      qs.forEach((q, i) => paperRows.push([i === 0 ? a.name : '', i === 0 ? a.maxMarks : '', q.label, q.maxMarks, (q.cos?.length ? q.cos : [q.co]).filter(Boolean).map((c) => c.code).join(', ')]));
+    }
+    sheets.push({ name: 'Question Papers', widths: [26, 15, 10, 8, 8], rows: paperRows });
+
+    // 5. Student-wise CO scores
+    const students = new Map();
+    for (const co of data.cos) {
+      for (const s of co.studentsBreakdown) {
+        const key = String(s.studentId);
+        if (!students.has(key)) students.set(key, { rollNo: s.rollNo, name: s.name, scores: {} });
+        students.get(key).scores[co.code] = s.isEvaluated ? s.percentage : 'Not evaluated';
+      }
+    }
+    const studentRows = [...students.values()].sort((a, b) =>
+      String(a.rollNo).localeCompare(String(b.rollNo), undefined, { numeric: true })
+    );
+    sheets.push({
+      name: 'Student-wise',
+      widths: [16, 28, ...data.cos.map(() => 11)],
+      rows: [
+        ['Roll No', 'Name', ...data.cos.map((c) => `${c.code} (%)`)],
+        ...studentRows.map((s) => [s.rollNo, s.name, ...data.cos.map((c) => s.scores[c.code] ?? 'N/A')]),
+      ],
+    });
+
+    // 6. Remarks for COs below target, left for faculty to complete
+    const below = data.cos.filter((c) => c.status === 'Below Target');
+    sheets.push({
+      name: 'Remarks',
+      widths: [8, 14, 13, 9, 45, 45],
+      rows: [
+        ['CO', 'Attainment (%)', 'Threshold (%)', 'Gap (%)', 'Reason / Analysis', 'Action Proposed'],
+        ...(below.length
+          ? below.map((c) => [c.code, c.classAttainment, c.targetThreshold, c.gap, '', ''])
+          : [['All evaluated COs met the threshold.']]),
+      ],
+    });
+
+    const workbook = xlsx.utils.book_new();
+    for (const { name, rows, widths } of sheets) {
+      const sheet = xlsx.utils.aoa_to_sheet(rows);
+      sheet['!cols'] = widths.map((wch) => ({ wch }));
+      xlsx.utils.book_append_sheet(workbook, sheet, name);
+    }
+
+    return {
+      buffer: xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' }),
+      filename: `${course.code}_${course.academicYear}_Course_Report.xlsx`.replace(/[^\w.-]+/g, '_'),
+    };
   }
 }
 

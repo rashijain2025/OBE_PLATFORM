@@ -27,6 +27,13 @@ router.get('/:id', authorize('admin', 'coordinator', 'faculty'), (req, res, next
 router.post('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.create(req, res, next));
 
 /**
+ * @route   PUT /api/questions/paper
+ * @desc    Save a whole question paper (create/update/delete questions of one assessment)
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.put('/paper', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => questionController.savePaper(req, res, next));
+
+/**
  * @route   PUT /api/questions/:id
  * @desc    Update question
  * @access  Admin, Coordinator, Faculty (must own course)

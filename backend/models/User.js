@@ -52,6 +52,18 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    // Student class list grouping: programme + batch (admission year) + section
+    batch: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    section: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -78,5 +90,6 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
+userSchema.index({ role: 1, programme: 1, batch: 1, section: 1 });
 
 module.exports = mongoose.model('User', userSchema);

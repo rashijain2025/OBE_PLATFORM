@@ -37,8 +37,8 @@ export default function HomePage() {
     },
     {
       icon: Building2,
-      title: 'Department Analytics',
-      description: 'Department-wide attainment trends, cohort comparisons, and academic insights.',
+      title: 'School / Centre Analytics',
+      description: 'School / Centre-wide attainment trends, cohort comparisons, and academic insights.',
     },
     {
       icon: Users,

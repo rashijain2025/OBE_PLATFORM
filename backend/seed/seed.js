@@ -24,11 +24,11 @@ const seedDatabase = async () => {
     let itDept = await Department.findOne({ code: 'IT' });
     if (!itDept) {
       itDept = await Department.create({
-        name: 'Department of Information Technology',
+        name: 'School of Information Technology',
         code: 'IT',
         description: 'Department focused on software systems, data engineering, and modern computing.',
       });
-      console.log('Created Department: Information Technology (IT)');
+      console.log('Created School / Centre: School of Information Technology (IT)');
     } else {
       console.log('Department IT already exists.');
     }
@@ -63,6 +63,7 @@ const seedDatabase = async () => {
         email: coordinatorEmail,
         passwordHash,
         role: 'coordinator',
+        roles: ['coordinator', 'faculty'],
         department: itDept._id,
         programme: itProgramme._id,
         isActive: true,
@@ -149,6 +150,9 @@ const seedDatabase = async () => {
           passwordHash,
           role: 'student',
           department: itDept._id,
+          programme: itProgramme._id,
+          batch: '2022',
+          section: 'A',
           isActive: true,
         },
         { upsert: true, new: true }

@@ -190,10 +190,18 @@ describe('Phase 2 Admin Module Tests', () => {
       const res = await request(app)
         .post('/api/departments')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ name: 'Phase2 Test Department', code: 'P2TESTDEPT', description: 'For testing' });
+        .send({ name: 'School of Architecture', code: 'P2TESTDEPT', description: 'For testing' });
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
       createdDeptId = res.body.data._id;
+    });
+
+    it('rejects a School / Centre name that is not in the fixed list', async () => {
+      const res = await request(app)
+        .post('/api/departments')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Phase2 Test Department', code: 'P2BADNAME' });
+      expect(res.statusCode).toBe(400);
     });
 
     it('admin can update the department', async () => {

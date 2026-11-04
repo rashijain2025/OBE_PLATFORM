@@ -1,5 +1,5 @@
 const xlsx = require('xlsx');
-const { StudentMarks, Assessment, Question, CourseEnrollment, User, Course, CourseOutcome } = require('../models');
+const { StudentMarks, Assessment, Question, CourseEnrollment, Course } = require('../models');
 
 // Normalize roll number: uppercase, strip special chars, normalize 0 vs O
 function normalizeRollNumber(val) {
@@ -87,6 +87,17 @@ function isIgnoredMetaColumn(key) {
   return ignored.includes(clean);
 }
 
+// "AB", "A", "ABSENT" (any case) mark a student absent for that question
+function isAbsentValue(val) {
+  return typeof val === 'string' && ['AB', 'A', 'ABSENT'].includes(val.trim().toUpperCase());
+}
+
+// Rows like "Max Marks" under the header in the downloaded template are not students
+function isTemplateMetaRow(rollValue) {
+  const clean = String(rollValue || '').toUpperCase().replace(/[^A-Z]/g, '');
+  return clean === 'MAXMARKS' || clean === 'MAX' || clean === 'CO' || clean === 'COURSEOUTCOME';
+}
+
 class MarkService {
   async verifyCourseAccess(courseId, user) {
     const course = await Course.findById(courseId);
@@ -118,6 +129,7 @@ class MarkService {
 
     // 1. Fetch questions for this assessment
     const questions = await Question.find({ assessment: assessmentId })
+      .populate('cos', 'code statement bloomLevel')
       .populate('co', 'code statement bloomLevel')
       .sort({ label: 1 });
 
@@ -144,7 +156,7 @@ class MarkService {
       const sId = String(m.student);
       const qId = String(m.question);
       if (marksMap[sId] && qId in marksMap[sId]) {
-        marksMap[sId][qId] = m.marksObtained;
+        marksMap[sId][qId] = m.isAbsent ? 'AB' : m.marksObtained;
       }
     }
 
@@ -214,9 +226,10 @@ class MarkService {
         throw err;
       }
 
-      // Validation 3 & 4: 0 <= marks <= maxMarks, empty = not evaluated (null)
+      // Validation 3 & 4: 0 <= marks <= maxMarks, empty = not evaluated (null), "AB" = absent
       let finalMarks = null;
-      if (marksObtained !== null && marksObtained !== undefined && marksObtained !== '') {
+      const isAbsent = isAbsentValue(marksObtained);
+      if (!isAbsent && marksObtained !== null && marksObtained !== undefined && marksObtained !== '') {
         const num = Number(marksObtained);
         if (isNaN(num) || num < 0 || num > question.maxMarks) {
           const err = new Error(
@@ -238,6 +251,7 @@ class MarkService {
               student: studentId,
               question: questionId,
               marksObtained: finalMarks,
+              isAbsent,
             },
           },
           upsert: true,
@@ -256,10 +270,11 @@ class MarkService {
   }
 
   /**
-   * Import marks from Excel/CSV
-   * Supports parsed `rows`, raw `csvText`, or base64 `excelBase64`
+   * Parse uploaded rows / CSV text and check them against this assessment without saving anything.
+   * Strict: only enrolled students and existing questions are accepted; nothing is auto-created.
+   * Returns valid cells as `entries` plus every problem found, so faculty can review before importing.
    */
-  async importCSV({ assessmentId, csvText, rows, excelBase64 }, user) {
+  async analyzeImport({ assessmentId, csvText, rows }, user) {
     if (!assessmentId) {
       const err = new Error('assessmentId is required');
       err.statusCode = 400;
@@ -272,239 +287,125 @@ class MarkService {
       err.statusCode = 404;
       throw err;
     }
-
-    const course = await Course.findById(assessment.course);
     await this.verifyCourseAccess(assessment.course, user);
 
-    let parsedRows = rows;
-
-    // 1. Parse Excel buffer if base64 provided
-    if (!parsedRows && excelBase64) {
-      const buffer = Buffer.from(excelBase64, 'base64');
-      const workbook = xlsx.read(buffer, { type: 'buffer' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      parsedRows = xlsx.utils.sheet_to_json(firstSheet, { defval: '' });
+    let parsedRows = Array.isArray(rows) ? rows : null;
+    if (!parsedRows && csvText && csvText.trim()) {
+      const workbook = xlsx.read(csvText.trim(), { type: 'string' });
+      parsedRows = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '', raw: false });
     }
-
-    // 2. Parse CSV text using SheetJS for robust delimiter and quote handling
-    if (!parsedRows && csvText) {
-      const trimmed = csvText.trim();
-      if (!trimmed) {
-        const err = new Error('CSV content is empty');
-        err.statusCode = 400;
-        throw err;
-      }
-      try {
-        const workbook = xlsx.read(trimmed, { type: 'string' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        parsedRows = xlsx.utils.sheet_to_json(firstSheet, { defval: '' });
-      } catch (err) {
-        // Fallback simple line split
-        const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        if (lines.length >= 2) {
-          const headers = lines[0].split(',').map((h) => h.trim().replace(/^["']|["']$/g, ''));
-          parsedRows = [];
-          for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map((v) => v.trim().replace(/^["']|["']$/g, ''));
-            const rowObj = {};
-            headers.forEach((h, idx) => {
-              rowObj[h] = values[idx] !== undefined ? values[idx] : '';
-            });
-            parsedRows.push(rowObj);
-          }
-        }
-      }
-    }
-
-    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
-      const err = new Error('No valid student rows found in the uploaded file or text');
+    if (!parsedRows || parsedRows.length === 0) {
+      const err = new Error('No rows found in the uploaded file');
       err.statusCode = 400;
       throw err;
     }
 
-    // 3. Inspect headers / columns
-    const allKeys = Object.keys(parsedRows[0] || {});
+    // Columns from every row: a sheet may leave a column empty in its first row
+    const allKeys = [...new Set(parsedRows.flatMap((row) => Object.keys(row || {})))];
     const rollKey = findRollKey(allKeys, parsedRows);
     if (!rollKey) {
-      const err = new Error('Could not identify Roll Number column (e.g. roll num, RollNo, Enrollment)');
+      const err = new Error('Could not find a Roll No column. Please use the downloaded template.');
       err.statusCode = 400;
       throw err;
     }
-
     const nameKey = findNameKey(allKeys);
 
-    // Identify question columns
-    const detectedQuestionCols = [];
-    for (const key of allKeys) {
-      if (key === rollKey || key === nameKey || isIgnoredMetaColumn(key)) continue;
-      const normLabel = normalizeQuestionLabel(key);
-      detectedQuestionCols.push({ originalKey: key, normLabel });
-    }
+    const questions = await Question.find({ assessment: assessmentId });
+    const questionByLabel = new Map(questions.map((q) => [normalizeQuestionLabel(q.label), q]));
 
-    if (detectedQuestionCols.length === 0) {
-      const err = new Error('No question marks columns (e.g. Q1, Q2, Q3...) detected in the sheet');
+    const matchedColumns = [];
+    const unknownColumns = [];
+    for (const key of allKeys) {
+      if (key === rollKey || key === nameKey || isIgnoredMetaColumn(key) || /^__EMPTY/.test(key)) continue;
+      const question = questionByLabel.get(normalizeQuestionLabel(key));
+      if (question) matchedColumns.push({ key, question });
+      else unknownColumns.push(key);
+    }
+    if (matchedColumns.length === 0) {
+      const err = new Error(
+        `None of the columns match this paper's questions (${questions.map((q) => q.label).join(', ')}).`
+      );
       err.statusCode = 400;
       throw err;
     }
 
-    // 4. Fetch or auto-create questions
-    let existingQuestions = await Question.find({ assessment: assessmentId });
-    const labelToQuestion = new Map();
-    for (const q of existingQuestions) {
-      labelToQuestion.set(normalizeQuestionLabel(q.label), q);
-    }
-
-    // If questions are missing, auto-create them mapped to Course Outcomes
-    const cos = await CourseOutcome.find({ course: assessment.course }).sort({ code: 1 });
-    let defaultCoId = cos[0]?._id;
-    if (!defaultCoId) {
-      const newCo = await CourseOutcome.create({
-        course: assessment.course,
-        code: 'CO1',
-        statement: 'Apply core course concepts and technical problem solving.',
-        bloomLevel: 'L3: Apply',
-      });
-      defaultCoId = newCo._id;
-    }
-
-    const autoCreatedQuestions = [];
-    for (let qIdx = 0; qIdx < detectedQuestionCols.length; qIdx++) {
-      const { originalKey, normLabel } = detectedQuestionCols[qIdx];
-      if (!labelToQuestion.has(normLabel)) {
-        // Calculate max mark from sheet data
-        let maxValFound = 0;
-        for (const row of parsedRows) {
-          const val = Number(row[originalKey]);
-          if (!isNaN(val) && val > maxValFound) {
-            maxValFound = val;
-          }
-        }
-        const computedMax = maxValFound > 0 ? (maxValFound <= 5 ? 5 : maxValFound <= 10 ? 10 : Math.ceil(maxValFound)) : 5;
-        const assignedCo = cos.length > 0 ? cos[qIdx % cos.length]._id : defaultCoId;
-
-        const newQ = await Question.create({
-          assessment: assessmentId,
-          course: assessment.course,
-          label: normLabel,
-          maxMarks: computedMax,
-          co: assignedCo,
-        });
-
-        labelToQuestion.set(normLabel, newQ);
-        autoCreatedQuestions.push({ label: normLabel, maxMarks: computedMax });
-      }
-    }
-
-    // 5. Fetch enrolled students and all student users for intelligent auto-enrollment
-    const enrollments = await CourseEnrollment.find({ course: assessment.course, status: 'active' }).populate('student');
-    const rollToStudent = new Map();
+    const enrollments = await CourseEnrollment.find({ course: assessment.course, status: 'active' })
+      .populate('student', 'name rollNo');
+    const studentByRoll = new Map();
     for (const e of enrollments) {
-      if (e.student && e.student.rollNo) {
-        rollToStudent.set(normalizeRollNumber(e.student.rollNo), e.student);
-      }
+      if (e.student?.rollNo) studentByRoll.set(normalizeRollNumber(e.student.rollNo), e.student);
     }
 
-    const allStudentUsers = await User.find({ role: 'student' });
-    const userRollMap = new Map();
-    for (const u of allStudentUsers) {
-      if (u.rollNo) {
-        userRollMap.set(normalizeRollNumber(u.rollNo), u);
-      }
-    }
+    const entries = [];
+    const issues = [];
+    const seenStudents = new Set();
+    let studentRows = 0;
 
-    const marksEntries = [];
-    const report = {
-      imported: 0,
-      skipped: 0,
-      questionsCount: detectedQuestionCols.length,
-      autoCreatedQuestions,
-      autoEnrolledCount: 0,
-      errors: [],
-    };
-
-    // 6. Process each student row
-    for (let rowIndex = 0; rowIndex < parsedRows.length; rowIndex++) {
-      const row = parsedRows[rowIndex];
+    parsedRows.forEach((row, index) => {
+      const rowNumber = index + 2; // header is spreadsheet row 1
       const rawRoll = String(row[rollKey] || '').trim();
-      const normRoll = normalizeRollNumber(rawRoll);
+      if (!rawRoll || isTemplateMetaRow(rawRoll)) return;
 
-      if (!normRoll) {
-        report.errors.push({ row: rowIndex + 1, reason: 'Missing roll number' });
-        report.skipped++;
-        continue;
-      }
-
-      let student = rollToStudent.get(normRoll);
-
-      // If student not currently enrolled in course, check user collection or auto-create
+      const student = studentByRoll.get(normalizeRollNumber(rawRoll));
       if (!student) {
-        let existingUser = userRollMap.get(normRoll);
-        if (!existingUser) {
-          // Auto-create student user record from sheet name and roll number
-          const rawName = nameKey ? String(row[nameKey] || '').trim() : '';
-          const studentName = rawName || `Student ${rawRoll}`;
-          existingUser = await User.create({
-            name: studentName,
+        issues.push({ row: rowNumber, rollNo: rawRoll, problem: 'Not enrolled in this course' });
+        return;
+      }
+      if (seenStudents.has(String(student._id))) {
+        issues.push({ row: rowNumber, rollNo: rawRoll, problem: 'Appears more than once; only the first row is used' });
+        return;
+      }
+      seenStudents.add(String(student._id));
+      studentRows++;
+
+      for (const { key, question } of matchedColumns) {
+        const raw = String(row[key] ?? '').trim();
+        if (raw === '') continue; // blank cells leave existing marks untouched
+        if (isAbsentValue(raw)) {
+          entries.push({ studentId: student._id, questionId: question._id, marksObtained: 'AB' });
+          continue;
+        }
+        const num = Number(raw);
+        if (!Number.isFinite(num) || num < 0 || num > question.maxMarks) {
+          issues.push({
+            row: rowNumber,
             rollNo: rawRoll,
-            email: `${normRoll.toLowerCase()}@student.obe.edu`,
-            role: 'student',
-            department: course?.department || null,
-            passwordHash: '$student_record_no_login$',
-            isActive: true,
+            problem: `${question.label}: "${raw}" is not a valid mark (0–${question.maxMarks} or AB)`,
           });
-          userRollMap.set(normRoll, existingUser);
+          continue;
         }
-
-        // Auto-enroll student into this course
-        await CourseEnrollment.create({
-          course: assessment.course,
-          student: existingUser._id,
-          academicYear: course?.academicYear || '2025-2026',
-          status: 'active',
-        });
-
-        student = existingUser;
-        rollToStudent.set(normRoll, student);
-        report.autoEnrolledCount++;
+        entries.push({ studentId: student._id, questionId: question._id, marksObtained: num });
       }
+    });
 
-      // Process marks for detected question columns
-      let rowHasValidMark = false;
-      for (const { originalKey, normLabel } of detectedQuestionCols) {
-        const question = labelToQuestion.get(normLabel);
-        if (!question) continue;
+    const missingStudents = enrollments
+      .filter((e) => e.student && !seenStudents.has(String(e.student._id)))
+      .map((e) => ({ rollNo: e.student.rollNo, name: e.student.name }));
 
-        const value = row[originalKey];
-        let finalMarks = null;
-        if (value !== null && value !== undefined && String(value).trim() !== '') {
-          const num = Number(value);
-          if (!isNaN(num) && num >= 0) {
-            // If mark exceeds question maxMarks, adjust question maxMarks dynamically to accommodate
-            if (num > question.maxMarks) {
-              question.maxMarks = Math.ceil(num);
-              await Question.updateOne({ _id: question._id }, { maxMarks: question.maxMarks });
-            }
-            finalMarks = num;
-            rowHasValidMark = true;
-          }
-        }
+    return {
+      entries,
+      summary: {
+        studentRows,
+        cellsToImport: entries.length,
+        questionsMatched: matchedColumns.map((c) => c.question.label),
+        unknownColumns,
+        issues,
+        missingStudents,
+      },
+    };
+  }
 
-        marksEntries.push({
-          studentId: student._id,
-          questionId: question._id,
-          marksObtained: finalMarks,
-        });
-      }
-
-      report.imported++;
+  /**
+   * Import marks from Excel/CSV rows. With dryRun, only reports what would be imported.
+   * Invalid cells are skipped and reported; valid cells are saved.
+   */
+  async importCSV({ assessmentId, csvText, rows, dryRun }, user) {
+    const { entries, summary } = await this.analyzeImport({ assessmentId, csvText, rows }, user);
+    if (dryRun || entries.length === 0) {
+      return { ...summary, imported: 0, dryRun: Boolean(dryRun) };
     }
-
-    // 7. Save marks in bulk
-    if (marksEntries.length > 0) {
-      await this.saveBulkMarks({ assessmentId, marks: marksEntries }, user);
-    }
-
-    return report;
+    await this.saveBulkMarks({ assessmentId, marks: entries }, user);
+    return { ...summary, imported: entries.length, dryRun: false };
   }
 }
 

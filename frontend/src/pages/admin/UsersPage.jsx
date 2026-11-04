@@ -66,8 +66,8 @@ function RegisterSystemUserModal({ open, departments, onClose, onSuccess, showTo
         <FormSelect label="System Role *" id="sys-role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
           {SYSTEM_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
         </FormSelect>
-        <FormSelect label="Department" id="sys-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-          <option value="">No Department Assigned</option>
+        <FormSelect label="School / Centre" id="sys-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+          <option value="">No School / Centre Assigned</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div className="flex gap-3 justify-end pt-2">
@@ -137,8 +137,8 @@ function AddStudentRecordModal({ open, departments, onClose, onSuccess, showToas
         <FormInput label="Full Name *" id="stu-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Aarav Patel" error={errors.name} />
         <FormInput label="Roll Number *" id="stu-rollno" value={form.rollNo} onChange={(e) => handleRollChange(e.target.value)} placeholder="22IT001" error={errors.rollNo} />
         <FormInput label="Email (Optional / Auto-generated)" id="stu-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="22it001@student.obe.edu" error={errors.email} />
-        <FormSelect label="Department" id="stu-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-          <option value="">No Department Assigned</option>
+        <FormSelect label="School / Centre" id="stu-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+          <option value="">No School / Centre Assigned</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div className="flex gap-3 justify-end pt-2">
@@ -195,8 +195,8 @@ function EditStudentRecordModal({ open, student, departments, onClose, onSuccess
         <FormInput label="Full Name *" id="edit-stu-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <FormInput label="Roll Number *" id="edit-stu-rollno" value={form.rollNo} onChange={(e) => setForm({ ...form, rollNo: e.target.value })} />
         <FormInput label="Email *" id="edit-stu-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <FormSelect label="Department" id="edit-stu-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-          <option value="">No Department Assigned</option>
+        <FormSelect label="School / Centre" id="edit-stu-dept" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+          <option value="">No School / Centre Assigned</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div className="flex gap-3 justify-end pt-2">
@@ -266,8 +266,8 @@ function BulkImportStudentsModal({ open, departments, onClose, onSuccess, showTo
         <div className="text-xs text-muted">
           Enter roll numbers one per line. Optionally format as <code className="text-accent">RollNo, Full Name, Email</code>.
         </div>
-        <FormSelect label="Target Department (Default)" id="bulk-stu-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
-          <option value="">Select Department (Optional)</option>
+        <FormSelect label="Target School / Centre (Default)" id="bulk-stu-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+          <option value="">Select School / Centre (Optional)</option>
           {departments.map((d) => <option key={d._id} value={d._id}>{d.name} ({d.code})</option>)}
         </FormSelect>
         <div>
@@ -483,7 +483,7 @@ export default function UsersPage() {
       {activeTab === 'system' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search system user name, email, department..." />
+            <SearchInput value={search} onChange={setSearch} placeholder="Search system user name, email, school / centre..." />
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -503,7 +503,7 @@ export default function UsersPage() {
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Name</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Role</th>
-                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">School / Centre</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
                       <th className="px-4 py-3 text-right" />
                     </tr>
@@ -570,7 +570,7 @@ export default function UsersPage() {
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Roll No</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">Name</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">Department</th>
+                      <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden md:table-cell">School / Centre</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
                       <th className="px-4 py-3 text-right" />
                     </tr>

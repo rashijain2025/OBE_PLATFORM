@@ -49,6 +49,39 @@ class UserController {
     } catch (err) { next(err); }
   }
 
+  async listClassLists(req, res, next) {
+    try {
+      const data = await userService.listClassLists(req.user);
+      res.json({ success: true, data, message: 'Class lists retrieved successfully' });
+    } catch (err) { next(err); }
+  }
+
+  async listClassStudents(req, res, next) {
+    try {
+      const { programmeId, batch, section } = req.query;
+      if (!programmeId || !batch || !section) {
+        return res.status(400).json({ success: false, data: null, message: 'programmeId, batch and section are required' });
+      }
+      const data = await userService.listClassStudents({ programmeId, batch, section }, req.user);
+      res.json({ success: true, data, message: 'Class students retrieved successfully' });
+    } catch (err) { next(err); }
+  }
+
+  async uploadClassList(req, res, next) {
+    try {
+      const { programmeId, batch, section, students } = req.body;
+      if (!programmeId) {
+        return res.status(400).json({ success: false, data: null, message: 'programmeId is required' });
+      }
+      const data = await userService.uploadClassList({ programmeId, batch, section, students }, req.user);
+      res.status(201).json({
+        success: true,
+        data,
+        message: `Class list saved: ${data.created} added, ${data.updated} updated, ${data.skipped.length} skipped`,
+      });
+    } catch (err) { next(err); }
+  }
+
   async bulkImportStudents(req, res, next) {
     try {
       const { rollNumbers, departmentId } = req.body;

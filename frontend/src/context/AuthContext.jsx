@@ -41,6 +41,21 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, [loadUser]);
 
+  // Other tabs of the same browser share the token: follow their sign-in, sign-out and role switches
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== 'token') return;
+      if (e.newValue) {
+        loadUser();
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [loadUser]);
+
   /**
    * Login user with credentials
    */

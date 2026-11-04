@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
+import { useAllowedEmailDomains, describeDomains } from '../../utils/emailDomains';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
 import { Lock, Mail, AlertCircle, Loader, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
+  const allowedDomains = useAllowedEmailDomains();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -206,7 +208,7 @@ export default function LoginPage() {
                         shape="rectangular"
                         theme="outline"
                         size="large"
-                        width="100%"
+                        width={320}
                         text="signin_with"
                       />
                     </div>
@@ -214,7 +216,7 @@ export default function LoginPage() {
                 </GoogleOAuthProvider>
 
                 <p className="text-xs text-muted mt-2.5 text-center">
-                  Coordinators and faculty: use your <span className="font-medium text-ink">@mitsgwalior.in</span> account
+                  Coordinators and faculty: use your <span className="font-medium text-ink">{describeDomains(allowedDomains)}</span> account
                 </p>
               </div>
             </div>

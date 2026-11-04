@@ -8,6 +8,7 @@ import {
   assignFacultyCoursesApi,
 } from '../../api/invitations';
 import api from '../../api/axios';
+import { useAllowedEmailDomains, describeDomains } from '../../utils/emailDomains';
 import {
   PageHeader, Card, PrimaryButton, DangerButton, GhostButton,
   Modal, Spinner, EmptyState,
@@ -19,6 +20,8 @@ import {
 } from 'lucide-react';
 
 export default function MyFacultyPage() {
+  const allowedDomains = useAllowedEmailDomains();
+  const domainText = describeDomains(allowedDomains);
   const [invitations, setInvitations] = useState([]);
   const [faculty, setFaculty] = useState([]);
   const [programmeCourses, setProgrammeCourses] = useState([]);
@@ -142,7 +145,7 @@ export default function MyFacultyPage() {
   };
 
   const copyInvitationMessage = () => {
-    const msg = `Hello,\n\nYou have been invited to join the MITS Gwalior Outcome Based Education (OBE) Platform. Please sign in with your official @mitsgwalior.in Google account at:\n${window.location.origin}/login\n\nRegards,\nOBE Department`;
+    const msg = `Hello,\n\nYou have been invited to join the MITS Gwalior Outcome Based Education (OBE) Platform. Please sign in with your ${domainText} Google account at:\n${window.location.origin}/login\n\nRegards,\nOBE School / Centre`;
     navigator.clipboard.writeText(msg);
     setCopiedMsg(true);
     setTimeout(() => setCopiedMsg(false), 2000);
@@ -195,8 +198,8 @@ export default function MyFacultyPage() {
       <ToastContainer toasts={toasts} dismiss={dismiss} />
 
       <PageHeader
-        title="Department Faculty & Invitations"
-        subtitle="Invite faculty of your department by their @mitsgwalior.in email. Invited faculty sign in directly via Google to access their courses and dashboards."
+        title="School / Centre Faculty & Invitations"
+        subtitle={`Invite faculty of your school / centre by their ${domainText} email. Invited faculty sign in directly via Google to access their courses and dashboards.`}
       />
 
       {/* 1. Invite Box Card */}
@@ -207,9 +210,9 @@ export default function MyFacultyPage() {
               <Mail className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-ink">Invite Department Faculty</h3>
+              <h3 className="text-base font-bold text-ink">Invite School / Centre Faculty</h3>
               <p className="text-xs text-muted">
-                Paste single or multiple @mitsgwalior.in emails (separated by commas or new lines, up to 50 at once)
+                Paste single or multiple {domainText} emails (separated by commas or new lines, up to 50 at once)
               </p>
             </div>
           </div>
@@ -248,7 +251,7 @@ export default function MyFacultyPage() {
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-muted">
-              Only exact <code className="px-1.5 py-0.5 rounded bg-paper font-semibold text-ink">@mitsgwalior.in</code> domains are allowed.
+              Only <code className="px-1.5 py-0.5 rounded bg-paper font-semibold text-ink">{domainText}</code> addresses are allowed.
             </div>
             <PrimaryButton type="submit" disabled={sending}>
               <Send className="w-4 h-4" />
@@ -287,10 +290,10 @@ export default function MyFacultyPage() {
           <div>
             <h3 className="text-base font-bold text-ink flex items-center gap-2">
               <Users className="w-5 h-5 text-accent" />
-              <span>Active Department Faculty ({faculty.length})</span>
+              <span>Active School / Centre Faculty ({faculty.length})</span>
             </h3>
             <p className="text-xs text-muted mt-0.5">
-              Faculty members in your department. Assign them courses from your academic programme.
+              Faculty members in your school / centre. Assign them courses from your academic programme.
             </p>
           </div>
         </div>
@@ -375,7 +378,7 @@ export default function MyFacultyPage() {
           <Spinner />
         ) : invitations.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted bg-paper rounded-xl border border-dashed border-border">
-            No invitations found for your department.
+            No invitations found for your school / centre.
           </div>
         ) : (
           <div className="overflow-x-auto">

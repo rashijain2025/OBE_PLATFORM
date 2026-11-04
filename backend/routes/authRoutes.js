@@ -1,6 +1,7 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { getAllowedDomains } = require('../utils/emailDomains');
 
 const router = express.Router();
 
@@ -36,6 +37,19 @@ router.post(
  * @access  Private (Authenticated users)
  */
 router.get('/me', protect, (req, res, next) => authController.getMe(req, res, next));
+
+/**
+ * @route   GET /api/auth/config
+ * @desc    Public sign-in settings, e.g. which email domains staff may use
+ * @access  Public
+ */
+router.get('/config', (req, res) => {
+  res.json({
+    success: true,
+    data: { allowedEmailDomains: getAllowedDomains() },
+    message: 'Auth config retrieved successfully',
+  });
+});
 
 /**
  * @route   PATCH /api/auth/change-password

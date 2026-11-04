@@ -1,24 +1,13 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { listCoursesApi } from '../../api/admin';
-import {
-  listAssessmentsApi,
-  getMarksGridApi,
-  saveBulkMarksApi,
-  importMarksCSVApi,
-} from '../../api/faculty';
-import {
-  PageHeader, Card, FormSelect, PrimaryButton, GhostButton, Spinner, EmptyState
-} from '../../components/ui/AdminUI';
+import { listAssessmentsApi } from '../../api/faculty';
+import { PageHeader, Card, FormSelect, EmptyState } from '../../components/ui/AdminUI';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
-import {
-  FileSpreadsheet, Save, Download, Upload, AlertCircle, CheckCircle2,
-  Table, BookOpen, Layers, X
-} from 'lucide-react';
+import MarksSheet from '../../components/marks/MarksSheet';
+import { BookOpen } from 'lucide-react';
 
 export default function MarksEntryPage() {
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toasts, showToast } = useToast();
 
@@ -29,16 +18,6 @@ export default function MarksEntryPage() {
 
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingAssessments, setLoadingAssessments] = useState(false);
-  const [loadingGrid, setLoadingGrid] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [gridData, setGridData] = useState(null);
-  const [localMarks, setLocalMarks] = useState({});
-
-  // CSV Modal state
-  const [csvModalOpen, setCsvModalOpen] = useState(false);
-  const [csvText, setCsvText] = useState('');
-  const fileInputRef = useRef(null);
 
   // 1. Fetch courses
   useEffect(() => {
@@ -47,9 +26,7 @@ export default function MarksEntryPage() {
       .then((res) => {
         const list = res.data || [];
         setCourses(list);
-        if (!selectedCourseId && list.length > 0) {
-          setSelectedCourseId(list[0]._id);
-        }
+        setSelectedCourseId((prev) => prev || list[0]?._id || '');
       })
       .catch((err) => showToast(err.response?.data?.message || 'Failed to load courses', 'error'))
       .finally(() => setLoadingCourses(false));
@@ -60,7 +37,6 @@ export default function MarksEntryPage() {
     if (!selectedCourseId) {
       setAssessments([]);
       setSelectedAssessmentId('');
-      setGridData(null);
       return;
     }
 
@@ -69,180 +45,12 @@ export default function MarksEntryPage() {
       .then((res) => {
         const list = res.data || [];
         setAssessments(list);
-        if (list.length > 0) {
-          // If query param assessment is in this course, keep it, otherwise pick first
-          if (!list.some((a) => a._id === selectedAssessmentId)) {
-            setSelectedAssessmentId(list[0]._id);
-          }
-        } else {
-          setSelectedAssessmentId('');
-          setGridData(null);
-        }
+        // Keep the assessment from the URL if it belongs to this course, otherwise pick the first
+        setSelectedAssessmentId((prev) => (list.some((a) => a._id === prev) ? prev : list[0]?._id || ''));
       })
       .catch((err) => showToast(err.response?.data?.message || 'Failed to load assessments', 'error'))
       .finally(() => setLoadingAssessments(false));
   }, [selectedCourseId, showToast]);
-
-  // 3. Fetch marks grid when assessment changes
-  useEffect(() => {
-    if (!selectedAssessmentId) {
-      setGridData(null);
-      return;
-    }
-
-    setLoadingGrid(true);
-    getMarksGridApi(selectedAssessmentId)
-      .then((res) => {
-        setGridData(res.data);
-        const initial = {};
-        const serverMarks = res.data.marks || {};
-        for (const s of res.data.students || []) {
-          initial[s._id] = {};
-          for (const q of res.data.questions || []) {
-            const val = serverMarks[s._id]?.[q._id];
-            initial[s._id][q._id] = val !== null && val !== undefined ? String(val) : '';
-          }
-        }
-        setLocalMarks(initial);
-      })
-      .catch((err) => showToast(err.response?.data?.message || 'Failed to load marks grid', 'error'))
-      .finally(() => setLoadingGrid(false));
-  }, [selectedAssessmentId, showToast]);
-
-  const questions = gridData?.questions || [];
-  const students = gridData?.students || [];
-  const assessment = gridData?.assessment;
-
-  const handleCellChange = (studentId, questionId, val) => {
-    setLocalMarks((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [questionId]: val,
-      },
-    }));
-  };
-
-  // Validation: Check for invalid marks
-  const validationErrors = useMemo(() => {
-    const errors = [];
-    for (const s of students) {
-      for (const q of questions) {
-        const val = localMarks[s._id]?.[q._id];
-        if (val !== '' && val !== undefined && val !== null) {
-          const num = Number(val);
-          if (isNaN(num)) {
-            errors.push(`${s.rollNo || s.name}: ${q.label} must be a number`);
-          } else if (num < 0) {
-            errors.push(`${s.rollNo || s.name}: ${q.label} cannot be negative`);
-          } else if (num > q.maxMarks) {
-            errors.push(`${s.rollNo || s.name}: ${q.label} exceeds max (${q.maxMarks})`);
-          }
-        }
-      }
-    }
-    return errors;
-  }, [students, questions, localMarks]);
-
-  // Bulk Save
-  const handleBulkSave = async () => {
-    if (validationErrors.length > 0) {
-      showToast(`Please fix marks errors before saving: ${validationErrors[0]}`, 'error');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const marksPayload = [];
-      for (const s of students) {
-        for (const q of questions) {
-          const val = localMarks[s._id]?.[q._id];
-          marksPayload.push({
-            studentId: s._id,
-            questionId: q._id,
-            marksObtained: val === '' || val === null || val === undefined ? null : Number(val),
-          });
-        }
-      }
-
-      await saveBulkMarksApi({
-        assessmentId: selectedAssessmentId,
-        marks: marksPayload,
-      });
-
-      showToast('All marks saved successfully!', 'success');
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to save marks', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // CSV Template Export
-  const handleExportTemplate = () => {
-    if (questions.length === 0) {
-      showToast('No questions configured to export', 'error');
-      return;
-    }
-
-    const headers = ['RollNo', 'Name', ...questions.map((q) => q.label)];
-    const rows = students.map((s) => {
-      const qVals = questions.map((q) => localMarks[s._id]?.[q._id] ?? '');
-      return [s.rollNo || '', `"${s.name || ''}"`, ...qVals].join(',');
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${assessment?.name || 'Marks'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('Marks CSV exported', 'success');
-  };
-
-  // CSV Import
-  const handleImportCSV = async () => {
-    if (!csvText.trim()) {
-      showToast('Please paste or upload CSV text', 'error');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const res = await importMarksCSVApi({
-        assessmentId: selectedAssessmentId,
-        csvText,
-      });
-
-      const report = res.data;
-      if (report.errors?.length > 0) {
-        showToast(`Imported ${report.imported} rows with notices (${report.errors[0]?.reason})`, 'error');
-      } else {
-        showToast(`Successfully imported marks for ${report.imported} students!`, 'success');
-      }
-
-      setCsvModalOpen(false);
-      setCsvText('');
-
-      // Refresh grid
-      const fresh = await getMarksGridApi(selectedAssessmentId);
-      setGridData(fresh.data);
-    } catch (err) {
-      showToast(err.response?.data?.message || 'CSV Import failed', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => setCsvText(event.target.result || '');
-    reader.readAsText(file);
-  };
 
   return (
     <div className="space-y-6">
@@ -250,12 +58,12 @@ export default function MarksEntryPage() {
 
       <PageHeader
         title="Student Marks Entry"
-        subtitle="Record, validate, and bulk-save question-level scores for course assessments."
+        subtitle="Type or paste marks like a spreadsheet. Changes save automatically."
         action={
           selectedCourseId && (
             <Link
               to={`/courses/${selectedCourseId}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-ink hover:text-ink-dark bg-paper hover:bg-surface border border-border transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-ink bg-paper hover:bg-surface border border-border transition-colors shadow-sm"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Course Setup</span>
@@ -265,15 +73,14 @@ export default function MarksEntryPage() {
       />
 
       {/* Selectors Bar */}
-      <Card>
+      <Card className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormSelect
-            label="Select Course"
+            label="Course"
             value={selectedCourseId}
             onChange={(e) => {
-              const val = e.target ? e.target.value : e;
-              setSelectedCourseId(val);
-              setSearchParams({ courseId: val });
+              setSelectedCourseId(e.target.value);
+              setSearchParams({ courseId: e.target.value });
             }}
             options={courses.map((c) => ({
               value: c._id,
@@ -283,214 +90,29 @@ export default function MarksEntryPage() {
           />
 
           <FormSelect
-            label="Select Assessment"
+            label="Assessment"
             value={selectedAssessmentId}
             onChange={(e) => {
-              const val = e.target ? e.target.value : e;
-              setSelectedAssessmentId(val);
-              setSearchParams({ courseId: selectedCourseId, assessmentId: val });
+              setSelectedAssessmentId(e.target.value);
+              setSearchParams({ courseId: selectedCourseId, assessmentId: e.target.value });
             }}
             options={assessments.map((a) => ({
               value: a._id,
-              label: `${a.name} (${a.type.replace('_', ' ')} · Max ${a.maxMarks} marks)`,
+              label: `${a.name} (Max ${a.maxMarks} marks)`,
             }))}
             disabled={loadingAssessments || assessments.length === 0}
           />
         </div>
       </Card>
 
-      {/* Grid Container */}
-      {loadingGrid ? (
-        <div className="py-20 flex justify-center items-center">
-          <Spinner />
-        </div>
-      ) : !selectedCourseId || !selectedAssessmentId ? (
+      {!selectedCourseId || !selectedAssessmentId ? (
         <Card>
-          <EmptyState message="Please select a course and assessment to view the marks entry grid." />
-        </Card>
-      ) : students.length === 0 ? (
-        <Card>
-          <EmptyState message="No students are enrolled in this course. Enroll students from Course Setup." />
-        </Card>
-      ) : questions.length === 0 ? (
-        <Card>
-          <EmptyState message="No questions have been configured for this assessment. Add questions from Course Setup." />
+          <EmptyState message="Select a course and assessment to enter marks." />
         </Card>
       ) : (
-        <Card>
-          {/* Header Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-border">
-            <div className="flex items-center gap-4 text-xs text-muted flex-wrap">
-              <span>Assessment: <strong className="text-ink font-medium">{assessment?.name}</strong></span>
-              <span>Max Marks: <strong className="text-accent font-mono font-semibold tabular-nums">{assessment?.maxMarks}</strong></span>
-              <span>Enrolled Students: <strong className="text-ink font-mono font-medium">{students.length}</strong></span>
-              <span>Questions: <strong className="text-ink font-mono font-medium">{questions.length}</strong></span>
-              {validationErrors.length > 0 && (
-                <span className="text-status-below flex items-center gap-1 font-medium font-mono tabular-nums">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {validationErrors.length} invalid mark(s)
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <GhostButton onClick={handleExportTemplate} title="Export CSV Template">
-                <Download className="w-3.5 h-3.5" /> Export Template
-              </GhostButton>
-              <GhostButton onClick={() => setCsvModalOpen(true)} title="Import Marks via CSV">
-                <Upload className="w-3.5 h-3.5" /> Import CSV
-              </GhostButton>
-              <PrimaryButton onClick={handleBulkSave} disabled={saving || validationErrors.length > 0}>
-                <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save All Marks'}
-              </PrimaryButton>
-            </div>
-          </div>
-
-          {/* Spreadsheet Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border text-muted uppercase tracking-wider bg-paper">
-                  <th className="py-3 px-3 w-28 font-semibold">Roll No</th>
-                  <th className="py-3 px-3 w-48 font-semibold">Student Name</th>
-                  {questions.map((q) => (
-                    <th key={q._id} className="py-3 px-2 text-center w-24">
-                      <div className="font-serif font-bold text-ink text-xs">{q.label}</div>
-                      <div className="text-[10px] text-muted font-mono mt-0.5 tabular-nums">Max {q.maxMarks}</div>
-                      <div className="text-[10px] text-accent font-mono font-semibold">{q.co?.code}</div>
-                    </th>
-                  ))}
-                  <th className="py-3 px-3 text-center w-28 font-semibold text-status-attained font-mono tabular-nums">
-                    Total ({assessment?.maxMarks})
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {students.map((s) => {
-                  let totalObtained = 0;
-                  let hasAnyMark = false;
-                  for (const q of questions) {
-                    const val = localMarks[s._id]?.[q._id];
-                    if (val !== '' && val !== undefined && val !== null) {
-                      const num = Number(val);
-                      if (!isNaN(num)) {
-                        totalObtained += num;
-                        hasAnyMark = true;
-                      }
-                    }
-                  }
-
-                  return (
-                    <tr key={s._id} className="hover:bg-paper/50 transition-colors">
-                      <td className="py-2.5 px-3 font-mono font-bold text-accent tabular-nums">
-                        {s.rollNo || '—'}
-                      </td>
-                      <td className="py-2.5 px-3 font-medium text-ink truncate max-w-[12rem]">
-                        {s.name}
-                      </td>
-                      {questions.map((q) => {
-                        const val = localMarks[s._id]?.[q._id] ?? '';
-                        const num = Number(val);
-                        const isInvalid =
-                          val !== '' && (isNaN(num) || num < 0 || num > q.maxMarks);
-
-                        return (
-                          <td key={q._id} className="py-2 px-2 text-center">
-                            <input
-                              type="number"
-                              step="any"
-                              min={0}
-                              max={q.maxMarks}
-                              placeholder="—"
-                              value={val}
-                              onChange={(e) => handleCellChange(s._id, q._id, e.target.value)}
-                              className={`w-16 text-center text-xs font-mono font-semibold py-1 px-1 rounded-md border transition-all focus:outline-none focus:ring-1 tabular-nums ${
-                                isInvalid
-                                  ? 'border-status-below bg-status-below-soft text-status-below focus:ring-status-below'
-                                  : val !== ''
-                                  ? 'border-accent/40 bg-surface text-ink focus:ring-ink'
-                                  : 'border-border bg-paper/50 text-muted focus:ring-ink cell-not-evaluated'
-                              }`}
-                            />
-                          </td>
-                        );
-                      })}
-                      <td className="py-2.5 px-3 text-center font-mono font-bold tabular-nums">
-                        {hasAnyMark ? (
-                          <span className="text-status-attained px-2 py-0.5 rounded bg-status-attained-soft border border-emerald-200">
-                            {Number(totalObtained.toFixed(2))}
-                          </span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-border text-xs text-muted">
-            <div>Tip: Empty cells are saved as null (not evaluated). Enter 0 for zero marks.</div>
-            <PrimaryButton onClick={handleBulkSave} disabled={saving || validationErrors.length > 0}>
-              <Save className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save All Marks'}
-            </PrimaryButton>
-          </div>
+        <Card className="p-4 sm:p-5">
+          <MarksSheet key={selectedAssessmentId} assessmentId={selectedAssessmentId} showToast={showToast} />
         </Card>
-      )}
-
-      {/* CSV Import Modal */}
-      {csvModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
-          <div className="w-full max-w-xl bg-surface border border-border rounded-xl p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-serif font-bold text-ink flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-accent" />
-                <span>Import Marks via CSV</span>
-              </h3>
-              <button
-                onClick={() => setCsvModalOpen(false)}
-                className="text-muted hover:text-ink transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-muted">
-              CSV must have headers matching the student roll number and question labels (e.g. <code>RollNo,{questions.map((q) => q.label).join(',')}</code>).
-            </p>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".csv,text/csv"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <GhostButton onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-3.5 h-3.5" /> Upload .csv File
-              </GhostButton>
-              <span className="text-xs text-muted">or paste CSV text below:</span>
-            </div>
-
-            <textarea
-              value={csvText}
-              onChange={(e) => setCsvText(e.target.value)}
-              placeholder={`RollNo,${questions.map((q) => q.label).join(',')}\n22IT001,${questions.map((q) => q.maxMarks).join(',')}\n22IT002,...`}
-              rows={6}
-              className="w-full bg-paper border border-border rounded-lg p-3 text-xs font-mono text-ink focus:outline-none focus:border-ink shadow-inner"
-            />
-
-            <div className="flex justify-end gap-2 pt-2">
-              <GhostButton onClick={() => setCsvModalOpen(false)}>Cancel</GhostButton>
-              <PrimaryButton onClick={handleImportCSV} disabled={saving || !csvText.trim()}>
-                {saving ? 'Importing...' : 'Import Marks'}
-              </PrimaryButton>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

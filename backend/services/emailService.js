@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { describeAllowedDomains } = require('../utils/emailDomains');
 
 /**
  * Service to send faculty invitation emails via SMTP
@@ -46,15 +47,15 @@ class EmailService {
       const loginUrl = `${frontendUrl}/login`;
       const mailFrom = process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@mitsgwalior.in';
 
-      const subject = `Invitation to join MITS Gwalior OBE Platform - ${departmentName || 'Department'}`;
+      const subject = `Invitation to join MITS Gwalior OBE Platform - ${departmentName || 'School / Centre'}`;
       const textContent = `Hello,
 
-You have been invited by ${coordinatorName || 'your OBE Coordinator'} to join the Outcome Based Education (OBE) Platform for ${departmentName || 'your department'}${programmeName ? ` (${programmeName})` : ''}.
+You have been invited by ${coordinatorName || 'your OBE Coordinator'} to join the Outcome Based Education (OBE) Platform for ${departmentName || 'your school / centre'}${programmeName ? ` (${programmeName})` : ''}.
 
 Please access the platform using the following link:
 ${loginUrl}
 
-Sign in with your @mitsgwalior.in Google account.
+Sign in with your ${describeAllowedDomains()} Google account.
 
 Regards,
 MITS Gwalior OBE Platform`;
@@ -64,7 +65,7 @@ MITS Gwalior OBE Platform`;
           <h2 style="color: #1e293b; margin-top: 0;">MITS Gwalior OBE Platform</h2>
           <p>Hello,</p>
           <p>
-            You have been invited by <strong>${coordinatorName || 'your OBE Coordinator'}</strong> to join the Outcome Based Education platform for <strong>${departmentName || 'your department'}</strong>${programmeName ? ` (<strong>${programmeName}</strong>)` : ''}.
+            You have been invited by <strong>${coordinatorName || 'your OBE Coordinator'}</strong> to join the Outcome Based Education platform for <strong>${departmentName || 'your school / centre'}</strong>${programmeName ? ` (<strong>${programmeName}</strong>)` : ''}.
           </p>
           <div style="margin: 25px 0;">
             <a href="${loginUrl}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
@@ -72,7 +73,7 @@ MITS Gwalior OBE Platform`;
             </a>
           </div>
           <p style="color: #64748b; font-size: 14px;">
-            <strong>Note:</strong> Sign in with your <strong>@mitsgwalior.in</strong> Google account.
+            <strong>Note:</strong> Sign in with your <strong>${describeAllowedDomains()}</strong> Google account.
           </p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
           <p style="color: #94a3b8; font-size: 12px; margin: 0;">

@@ -17,7 +17,7 @@ const programmeSchema = new mongoose.Schema(
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
-      required: [true, 'Department is required'],
+      required: [true, 'School / Centre is required'],
     },
     durationYears: {
       type: Number,

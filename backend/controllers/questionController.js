@@ -1,6 +1,20 @@
 const questionService = require('../services/questionService');
 
 class QuestionController {
+  async savePaper(req, res, next) {
+    try {
+      const { assessmentId, questions, allowDeleteWithMarks } = req.body;
+      if (!assessmentId) {
+        return res.status(400).json({ success: false, data: null, message: 'assessmentId is required' });
+      }
+      const result = await questionService.savePaper(
+        { assessmentId, questions, allowDeleteWithMarks: Boolean(allowDeleteWithMarks) },
+        req.user
+      );
+      res.json({ success: true, data: result, message: 'Question paper saved' });
+    } catch (err) { next(err); }
+  }
+
   async list(req, res, next) {
     try {
       const { assessmentId } = req.query;

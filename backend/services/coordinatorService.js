@@ -1,4 +1,5 @@
 const { User, Programme, Department } = require('../models');
+const { isAllowedEmail, describeAllowedDomains } = require('../utils/emailDomains');
 
 /**
  * Service to manage Coordinators (Admin-only)
@@ -37,20 +38,16 @@ class CoordinatorService {
    */
   async createCoordinator({ name, email, department, programme }) {
     if (!name || !email || !department || !programme) {
-      const err = new Error('Name, email, department and programme are required');
+      const err = new Error('Name, email, school / centre and programme are required');
       err.statusCode = 400;
       throw err;
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAIN || 'mitsgwalior.in')
-      .toLowerCase()
-      .split(',')
-      .map((d) => d.trim().replace(/^@/, ''));
 
     let warning = null;
-    if (!allowedDomains.some((d) => normalizedEmail.endsWith(`@${d}`))) {
-      warning = `Email domain does not match official @${allowedDomains.join(', @')} domain. Google login may fail unless domain matches.`;
+    if (!isAllowedEmail(normalizedEmail)) {
+      warning = `Email is not a ${describeAllowedDomains()} address. Google sign-in will be refused for it.`;
     }
 
     // Check programme exists
@@ -128,9 +125,8 @@ class CoordinatorService {
     let warning = null;
     if (email) {
       const normalizedEmail = email.toLowerCase().trim();
-      const allowedDomain = (process.env.ALLOWED_EMAIL_DOMAIN || 'mitsgwalior.in').toLowerCase().trim();
-      if (!normalizedEmail.endsWith(`@${allowedDomain}`)) {
-        warning = `Email domain does not match official @${allowedDomain} domain.`;
+      if (!isAllowedEmail(normalizedEmail)) {
+        warning = `Email is not a ${describeAllowedDomains()} address. Google sign-in will be refused for it.`;
       }
       user.email = normalizedEmail;
     }

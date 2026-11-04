@@ -19,7 +19,7 @@ class ProgrammeController {
     try {
       const { name, code, department, durationYears, level } = req.body;
       if (!name || !code || !department) {
-        return res.status(400).json({ success: false, data: null, message: 'name, code and department are required' });
+        return res.status(400).json({ success: false, data: null, message: 'name, code and school / centre are required' });
       }
       const prog = await programmeService.createProgramme({ name, code, department, durationYears, level });
       res.status(201).json({ success: true, data: prog, message: 'Programme created successfully' });
