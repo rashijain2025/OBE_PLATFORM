@@ -28,6 +28,20 @@ router.post('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) 
 router.post('/bulk', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => enrollmentController.bulkEnroll(req, res, next));
 
 /**
+ * @route   GET /api/enrollments/class-groups?courseId=
+ * @desc    Class lists available for this course's programme
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.get('/class-groups', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => enrollmentController.classGroups(req, res, next));
+
+/**
+ * @route   POST /api/enrollments/by-class
+ * @desc    Enroll a whole class list (batch + section) into a course
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.post('/by-class', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => enrollmentController.enrollClass(req, res, next));
+
+/**
  * @route   DELETE /api/enrollments/:id
  * @desc    Remove a single enrollment
  * @access  Admin, Coordinator, Faculty

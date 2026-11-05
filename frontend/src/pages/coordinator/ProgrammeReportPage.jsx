@@ -2,6 +2,7 @@ import React, { useState, useEffect, Component } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { listProgrammesApi } from '../../api/admin';
 import { getProgrammeAttainmentApi, exportProgrammeCSVUrl } from '../../api/programme';
+import { InfoTip } from '../../components/ui/AdminUI';
 import {
   BarChart,
   Bar,
@@ -213,6 +214,10 @@ function ProgrammeReportPageContent() {
           {/* Target Threshold */}
           <div className="flex items-center gap-2 bg-paper border border-border rounded-xl px-3 py-1.5 shadow-sm">
             <span className="text-xs text-muted">Target %:</span>
+            <InfoTip
+              placement="bottom"
+              text="A PO or PSO counts as attained if its weighted attainment from the mapped COs reaches this %. The same value is also used as the CO attainment threshold for every course in the programme."
+            />
             <input
               type="number"
               min="1"
@@ -252,7 +257,7 @@ function ProgrammeReportPageContent() {
           <GraduationCap className="w-10 h-10 mx-auto text-muted/60 mb-2" />
           <h3 className="text-base font-serif font-semibold text-ink">No Programmes Available</h3>
           <p className="text-xs text-muted max-w-md mx-auto">
-            Please ask an administrator to create an academic programme for your department.
+            Please ask an administrator to create an academic programme for your school / centre.
           </p>
         </div>
       ) : !reportData ? (

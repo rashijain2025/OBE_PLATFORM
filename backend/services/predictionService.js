@@ -122,7 +122,7 @@ class PredictionService {
 
     for (const co of cos) {
       const coIdStr = String(co._id);
-      const coEarlyQuestions = earlyQuestions.filter((q) => String(q.co) === coIdStr);
+      const coEarlyQuestions = earlyQuestions.filter((q) => Question.coIdsOf(q).includes(coIdStr));
 
       for (const student of students) {
         const studentIdStr = String(student._id);

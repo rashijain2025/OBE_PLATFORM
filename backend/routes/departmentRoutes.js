@@ -15,6 +15,13 @@ router.use(protect);
 router.get('/', (req, res, next) => departmentController.list(req, res, next));
 
 /**
+ * @route   GET /api/departments/catalog
+ * @desc    The fixed list of Schools / Centres, marking which already exist
+ * @access  Authenticated
+ */
+router.get('/catalog', (req, res, next) => departmentController.catalog(req, res, next));
+
+/**
  * @route   GET /api/departments/:id
  * @desc    Get a single department
  * @access  Authenticated
@@ -34,6 +41,20 @@ router.post('/', authorize('admin'), (req, res, next) => departmentController.cr
  * @access  Admin
  */
 router.put('/:id', authorize('admin'), (req, res, next) => departmentController.update(req, res, next));
+
+/**
+ * @route   GET /api/departments/:id/obe-targets
+ * @desc    Department-wide CO targets (Target Marks %, Attainment Goal %)
+ * @access  Authenticated
+ */
+router.get('/:id/obe-targets', (req, res, next) => departmentController.getObeTargets(req, res, next));
+
+/**
+ * @route   PUT /api/departments/:id/obe-targets
+ * @desc    Set department CO targets, optionally applying them to existing COs
+ * @access  Admin, Coordinator (own department)
+ */
+router.put('/:id/obe-targets', authorize('admin', 'coordinator'), (req, res, next) => departmentController.updateObeTargets(req, res, next));
 
 /**
  * @route   DELETE /api/departments/:id

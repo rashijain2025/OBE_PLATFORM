@@ -92,6 +92,87 @@ class EnrollmentService {
   }
 
   /**
+   * Class lists of the course's programme, with how many of each are already enrolled
+   */
+  async listClassGroupsForCourse(courseId, user) {
+    const course = await this.verifyCourseAccess(courseId, user);
+
+    const [groups, enrolledIds] = await Promise.all([
+      User.aggregate([
+        {
+          $match: {
+            role: 'student',
+            isActive: true,
+            programme: course.programme,
+            batch: { $ne: null },
+            section: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: { batch: '$batch', section: '$section' },
+            studentIds: { $push: '$_id' },
+          },
+        },
+        { $sort: { '_id.batch': -1, '_id.section': 1 } },
+      ]),
+      CourseEnrollment.find({ course: courseId, status: 'active' }).distinct('student'),
+    ]);
+
+    const enrolledSet = new Set(enrolledIds.map(String));
+    return groups.map((g) => ({
+      batch: g._id.batch,
+      section: g._id.section,
+      count: g.studentIds.length,
+      alreadyEnrolled: g.studentIds.filter((id) => enrolledSet.has(String(id))).length,
+    }));
+  }
+
+  /**
+   * Enroll every student of one class list (batch + section) into the course
+   */
+  async enrollClass({ courseId, batch, section }, user) {
+    const course = await this.verifyCourseAccess(courseId, user);
+    const students = await User.find({
+      role: 'student',
+      isActive: true,
+      programme: course.programme,
+      batch: String(batch),
+      section: String(section).toUpperCase(),
+    }).select('_id');
+
+    if (students.length === 0) {
+      const err = new Error(`No students found in batch ${batch}, section ${section}`);
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const existing = await CourseEnrollment.find({ course: courseId, student: { $in: students.map((s) => s._id) } });
+    const existingByStudent = new Map(existing.map((e) => [String(e.student), e]));
+
+    let enrolled = 0;
+    let reactivated = 0;
+    for (const s of students) {
+      const current = existingByStudent.get(String(s._id));
+      if (!current) {
+        await CourseEnrollment.create({ course: courseId, student: s._id, status: 'active' });
+        enrolled++;
+      } else if (current.status !== 'active') {
+        current.status = 'active';
+        await current.save();
+        reactivated++;
+      }
+    }
+
+    return {
+      enrolled,
+      reactivated,
+      alreadyEnrolled: students.length - enrolled - reactivated,
+      total: students.length,
+    };
+  }
+
+  /**
    * List enrollments for a course
    */
   async listEnrollments({ courseId }, user) {

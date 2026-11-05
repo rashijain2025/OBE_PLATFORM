@@ -3,9 +3,10 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { listCoursesApi } from '../../api/admin';
 import { getCourseCOAttainmentApi, exportAttainmentCSVUrl } from '../../api/attainment';
 import {
-  PageHeader, Card, FormSelect, FormInput, PrimaryButton, GhostButton, Spinner, EmptyState
+  PageHeader, Card, FormSelect, FormInput, PrimaryButton, GhostButton, Spinner, EmptyState, InfoTip
 } from '../../components/ui/AdminUI';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
+import CourseReportButton from '../../components/course/CourseReportButton';
 import {
   Award, Target, Users, BookOpen, Download, AlertTriangle, CheckCircle2,
   Table, BarChart3, ChevronRight, Layers, FileSpreadsheet
@@ -92,7 +93,8 @@ export default function COAttainmentPage() {
         subtitle="Evaluate threshold-based student attainment and class-wide OBE achievement percentages."
         action={
           selectedCourseId && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <CourseReportButton courseId={selectedCourseId} target={target} courseCode={data?.course?.code} showToast={showToast} />
               <a
                 href={exportAttainmentCSVUrl(selectedCourseId, target)}
                 download
@@ -135,7 +137,10 @@ export default function COAttainmentPage() {
 
           <div>
             <label className="block text-xs font-medium text-muted mb-1 flex items-center justify-between">
-              <span>Target Attainment Threshold (%)</span>
+              <span className="inline-flex items-center gap-1.5">
+                Target Attainment Threshold (%)
+                <InfoTip text="This one number is used twice: a student attains a CO if they score at least this % of the marks on that CO's questions, and the CO counts as attained for the class if at least this % of evaluated students attain it." />
+              </span>
               <span className="text-muted/70 text-[10px]">Default 40%</span>
             </label>
             <div className="relative">

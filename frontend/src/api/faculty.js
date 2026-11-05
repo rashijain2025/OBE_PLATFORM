@@ -78,6 +78,28 @@ export const deleteQuestionApi = async (id) => {
   return res.data;
 };
 
+export const saveQuestionPaperApi = async (data) => {
+  const res = await api.put('/questions/paper', data);
+  return res.data;
+};
+
+// ─── Course setup copy & progress ─────────────────────────────────────────────
+
+export const listCopySourcesApi = async (courseId) => {
+  const res = await api.get(`/courses/${courseId}/copy-sources`);
+  return res.data;
+};
+
+export const copyCourseSetupApi = async (courseId, sourceCourseId) => {
+  const res = await api.post(`/courses/${courseId}/copy-setup`, { sourceCourseId });
+  return res.data;
+};
+
+export const listCourseProgressApi = async () => {
+  const res = await api.get('/courses/progress');
+  return res.data;
+};
+
 // ─── Marks Management ─────────────────────────────────────────────────────────
 
 export const getMarksGridApi = async (assessmentId) => {
@@ -114,5 +136,15 @@ export const bulkEnrollCourseStudentsApi = async (data) => {
 
 export const removeCourseEnrollmentApi = async (id) => {
   const res = await api.delete(`/enrollments/${id}`);
+  return res.data;
+};
+
+export const listClassGroupsApi = async (courseId) => {
+  const res = await api.get(`/enrollments/class-groups?courseId=${courseId}`);
+  return res.data;
+};
+
+export const enrollClassApi = async (data) => {
+  const res = await api.post('/enrollments/by-class', data);
   return res.data;
 };

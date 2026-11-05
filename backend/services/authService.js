@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const { User, Invitation } = require('../models');
 const { generateToken } = require('../utils/jwt');
+const { getAllowedDomains, isAllowedEmail, describeAllowedDomains } = require('../utils/emailDomains');
 
 /**
  * Service to handle user authentication
@@ -111,15 +112,11 @@ class AuthService {
     }
 
     const email = (payload.email || '').toLowerCase().trim();
-    const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAIN || 'mitsgwalior.in')
-      .toLowerCase()
-      .split(',')
-      .map((d) => d.trim().replace(/^@/, ''));
+    const allowedDomains = getAllowedDomains();
 
     // Exact domain match: reject look-alikes like x@mitsgwalior.in.evil.com or x@evilmitsgwalior.in
-    const emailParts = email.split('@');
-    if (emailParts.length !== 2 || !allowedDomains.includes(emailParts[1].toLowerCase())) {
-      const error = new Error(`Only official accounts (@${allowedDomains.join(', @')}) are allowed`);
+    if (!isAllowedEmail(email)) {
+      const error = new Error(`Only ${describeAllowedDomains()} accounts are allowed`);
       error.statusCode = 403;
       throw error;
     }
@@ -191,7 +188,7 @@ class AuthService {
 
       // Create faculty user from invitation
       user = await User.create({
-        name: (payload.name || emailParts[0]).trim(),
+        name: (payload.name || email.split('@')[0]).trim(),
         email,
         googleId: payload.sub,
         role: 'faculty',

@@ -12,7 +12,7 @@ const invitationSchema = new mongoose.Schema(
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
-      required: [true, 'Department is required'],
+      required: [true, 'School / Centre is required'],
     },
     programme: {
       type: mongoose.Schema.Types.ObjectId,

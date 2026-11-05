@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getDashboardStatsApi } from '../api/admin';
+import { listCourseProgressApi } from '../api/faculty';
 import { Users, Building2, BookOpen, Award, GraduationCap, Activity, LayoutDashboard, AlertCircle, CheckSquare, Layers, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Spinner } from '../components/ui/AdminUI';
@@ -20,6 +21,80 @@ function StatCard({ label, value, sub, icon: Icon }) {
   );
 }
 
+/**
+ * Setup progress of every visible course: coordinators see their department, faculty their own courses
+ */
+function CourseProgressTable({ showFaculty }) {
+  const [rows, setRows] = useState(null);
+
+  useEffect(() => {
+    listCourseProgressApi()
+      .then((res) => setRows(res.data || []))
+      .catch(() => setRows([]));
+  }, []);
+
+  if (rows === null) return <Spinner />;
+  if (rows.length === 0) return null;
+
+  const stepLabel = (p) => {
+    if (p.ready) return { text: 'Ready', tone: 'text-status-attained bg-status-attained-soft border-emerald-200' };
+    if (!p.steps.cosDefined) return { text: 'Add COs', tone: 'text-muted bg-paper border-border' };
+    if (!p.steps.allCOsAssessed || !p.steps.papersComplete) return { text: 'Question papers', tone: 'text-status-borderline bg-status-borderline-soft border-amber-200' };
+    if (!p.steps.studentsAdded) return { text: 'Add students', tone: 'text-status-borderline bg-status-borderline-soft border-amber-200' };
+    return { text: 'Marks entry', tone: 'text-status-borderline bg-status-borderline-soft border-amber-200' };
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Course Setup Progress</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-paper/50 text-xs text-muted uppercase">
+              <th className="py-3 px-4 text-left">Course</th>
+              {showFaculty && <th className="py-3 px-4 text-left hidden sm:table-cell">Faculty</th>}
+              <th className="py-3 px-4 text-left">Next step</th>
+              <th className="py-3 px-4 text-left w-48">Marks entered</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rows.map(({ course, progress }) => {
+              const step = stepLabel(progress);
+              return (
+                <tr key={course._id} className="hover:bg-paper/60">
+                  <td className="py-3 px-4">
+                    <Link to={`/courses/${course._id}`} className="font-medium text-ink hover:text-accent">
+                      {course.code} <span className="text-muted font-normal">· {course.name}</span>
+                    </Link>
+                    <div className="text-[11px] text-muted">{course.academicYear} · Sem {course.semester}</div>
+                  </td>
+                  {showFaculty && <td className="py-3 px-4 text-muted hidden sm:table-cell">{course.faculty?.name || '—'}</td>}
+                  <td className="py-3 px-4">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${step.tone}`}>{step.text}</span>
+                    {progress.unmappedCOs.length > 0 && (
+                      <div className="text-[11px] text-status-borderline mt-1">No questions for {progress.unmappedCOs.join(', ')}</div>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 rounded-full bg-paper border border-border overflow-hidden">
+                        <div className="h-full bg-accent" style={{ width: `${progress.marksPercent}%` }} />
+                      </div>
+                      <span className="text-xs text-muted tabular-nums w-9 text-right">{progress.marksPercent}%</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
@@ -34,7 +109,7 @@ export default function DashboardPage() {
   }, []);
 
   const roleDescriptions = {
-    admin: 'Full system access — manage users, departments, programmes, and courses.',
+    admin: 'Full system access — manage users, schools / centres, programmes, and courses.',
     coordinator: 'OBE Coordinator — manage curriculum, PO/PSO definitions, and college-wide attainment.',
     faculty: 'Course Instructor — manage course outcomes, assessments, marks entry, and CO attainment.',
   };
@@ -53,7 +128,7 @@ export default function DashboardPage() {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <StatCard label="Total Users" value={stats.users?.total} sub={`${stats.users?.byRole?.faculty} faculty · ${stats.users?.byRole?.student} student records`} icon={Users} />
-          <StatCard label="Departments" value={stats.departments} icon={Building2} />
+          <StatCard label="Schools / Centres" value={stats.departments} icon={Building2} />
           <StatCard label="Programmes" value={stats.programmes} icon={Award} />
           <StatCard label="Courses" value={stats.courses} icon={BookOpen} />
           <StatCard label="Active Enrollments" value={stats.enrollments} icon={GraduationCap} />
@@ -65,14 +140,14 @@ export default function DashboardPage() {
     if (user?.role === 'coordinator') {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Courses" value={stats.courses} icon={BookOpen} sub="In department" />
+          <StatCard label="Total Courses" value={stats.courses} icon={BookOpen} sub="In school / centre" />
           <StatCard label="Programmes" value={stats.programmes} icon={Building2} sub="Academic programmes" />
           <StatCard label="Program Outcomes (POs)" value={stats.pos} icon={Award} sub="Graduate attributes" />
           <StatCard label="Program Specific (PSOs)" value={stats.psos} icon={Award} sub="Domain outcomes" />
           <StatCard label="Educational Objectives" value={stats.peos} icon={BookOpen} sub="PEO statements" />
           <StatCard label="CO-PO Mappings" value={stats.mappings} icon={Activity} sub="Correlation matrix" />
           <StatCard label="Active Enrollments" value={stats.enrollments} icon={GraduationCap} sub="Student seats" />
-          <StatCard label="Total Students" value={stats.students} icon={Users} sub="Department cohort" />
+          <StatCard label="Total Students" value={stats.students} icon={Users} sub="School / Centre cohort" />
         </div>
       );
     }
@@ -138,6 +213,10 @@ export default function DashboardPage() {
         <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">Live Stats</h3>
         {renderStats()}
       </div>
+
+      {(user?.role === 'coordinator' || user?.role === 'faculty') && (
+        <CourseProgressTable showFaculty={user?.role === 'coordinator'} />
+      )}
 
       {/* Programme Outcomes & Accreditation Workflow */}
       {(user?.role === 'coordinator' || user?.role === 'admin') && (
@@ -208,7 +287,7 @@ export default function DashboardPage() {
             </div>
           )}
           <div>
-            <dt className="text-xs font-medium text-muted uppercase">Department</dt>
+            <dt className="text-xs font-medium text-muted uppercase">School / Centre</dt>
             <dd className="text-ink font-medium mt-0.5">{user?.department?.name || user?.department?.code || '—'}</dd>
           </div>
           <div>

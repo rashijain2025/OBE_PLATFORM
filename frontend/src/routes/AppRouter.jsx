@@ -21,6 +21,7 @@ import EarlyWarningPage from '../pages/faculty/EarlyWarningPage';
 import ModelPage from '../pages/admin/ModelPage';
 import CoordinatorsPage from '../pages/admin/CoordinatorsPage';
 import MyFacultyPage from '../pages/coordinator/MyFacultyPage';
+import DepartmentSetupPage from '../pages/coordinator/DepartmentSetupPage';
 
 function PublicRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -68,6 +69,7 @@ export default function AppRouter() {
 
             {/* Coordinator & Curriculum Module */}
             <Route path="/my-faculty" element={<MyFacultyPage />} />
+            <Route path="/department-setup" element={<DepartmentSetupPage />} />
             <Route path="/outcomes" element={<CurriculumOutcomesPage />} />
             <Route path="/mappings" element={<COPOMappingPage />} />
             <Route path="/curriculum" element={<COPOMappingPage />} />

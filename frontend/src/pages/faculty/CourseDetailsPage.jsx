@@ -5,16 +5,19 @@ import {
   getCourseDetailsApi,
   createCOApi, updateCOApi, deleteCOApi,
   createAssessmentApi, updateAssessmentApi, deleteAssessmentApi,
-  createQuestionApi, updateQuestionApi, deleteQuestionApi,
   listCourseEnrollmentsApi, enrollCourseStudentApi, bulkEnrollCourseStudentsApi, removeCourseEnrollmentApi,
+  listClassGroupsApi, enrollClassApi,
 } from '../../api/faculty';
 import { listUsersApi } from '../../api/admin';
 import {
   Card, PrimaryButton, DangerButton, GhostButton,
-  FormInput, FormSelect, Modal, Spinner, EmptyState,
+  FormInput, FormSelect, Modal, Spinner, EmptyState, InfoTip,
 } from '../../components/ui/AdminUI';
 import { useToast, ToastContainer } from '../../components/ui/Toast';
 import MarksGridModal from '../../components/marks/MarksGridModal';
+import QuestionPaperBuilder from '../../components/course/QuestionPaperBuilder';
+import CourseChecklist from '../../components/course/CourseChecklist';
+import CopySetupCard from '../../components/course/CopySetupCard';
 import {
   ArrowLeft, Award, CheckSquare, Plus, Edit2, Trash2,
   AlertTriangle, Users, CheckCircle2, ChevronRight, FileSpreadsheet, UserPlus, GraduationCap
@@ -29,13 +32,17 @@ const BLOOM_LEVELS = [
   'L6: Create',
 ];
 
-const ASSESSMENT_TYPES = [
-  { value: 'internal', label: 'Internal Exam (CIE)' },
-  { value: 'assignment', label: 'Assignment' },
-  { value: 'quiz', label: 'Quiz' },
-  { value: 'lab', label: 'Lab Test' },
-  { value: 'end_sem', label: 'End Semester Exam (SEE)' },
-];
+
+// A course has at least 3 and at most 5 Course Outcomes
+const MIN_COS = 3;
+const MAX_COS = 5;
+const CO_CODES = Array.from({ length: MAX_COS }, (_, i) => `CO${i + 1}`);
+
+const TARGET_MARKS_HINT =
+  'The minimum percentage of this CO\'s marks a student must score to be counted as having attained the CO. Example: 60% means a student needs at least 6 out of 10 marks on the questions mapped to this CO.';
+
+const ATTAINMENT_GOAL_HINT =
+  'The percentage of students who must reach the Target Marks for the CO to count as attained by the class. Example: 70% means at least 42 of 60 students must cross the target.';
 
 export default function CourseDetailsPage() {
   const { id } = useParams();
@@ -59,14 +66,14 @@ export default function CourseDetailsPage() {
   // Modals state
   const [coModal, setCoModal] = useState({ open: false, co: null });
   const [assessmentModal, setAssessmentModal] = useState({ open: false, assessment: null });
-  const [questionModal, setQuestionModal] = useState({ open: false, assessment: null, question: null });
   const [marksModal, setMarksModal] = useState({ open: false, assessment: null });
   const [enrollModal, setEnrollModal] = useState({ open: false });
   const [bulkEnrollModal, setBulkEnrollModal] = useState({ open: false });
+  const [classModalOpen, setClassModalOpen] = useState(false);
 
+  // Only the first load shows the full-page spinner; refreshes after edits update in place
   const fetchDetails = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await getCourseDetailsApi(id);
       setData(res.data);
     } catch (err) {
@@ -157,20 +164,36 @@ export default function CourseDetailsPage() {
 
   // ─── CO Handlers ────────────────────────────────────────────────────────────
 
-  const handleSaveCO = async (formData) => {
-    try {
-      if (coModal.co) {
-        await updateCOApi(coModal.co._id, formData);
+  // Edit saves one CO; create receives every row added in the modal
+  const handleSaveCO = async (rows) => {
+    if (coModal.co) {
+      try {
+        await updateCOApi(coModal.co._id, rows[0]);
         showToast('Course Outcome updated successfully', 'success');
-      } else {
-        await createCOApi({ ...formData, courseId: id });
-        showToast('Course Outcome created successfully', 'success');
+        setCoModal({ open: false, co: null });
+        fetchDetails();
+      } catch (err) {
+        showToast(err.response?.data?.message || 'Operation failed', 'error');
       }
-      setCoModal({ open: false, co: null });
-      fetchDetails();
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Operation failed', 'error');
+      return;
     }
+
+    const failed = [];
+    for (const row of rows) {
+      try {
+        await createCOApi({ ...row, courseId: id });
+      } catch (err) {
+        failed.push(`${row.code}: ${err.response?.data?.message || 'failed'}`);
+      }
+    }
+    const createdCount = rows.length - failed.length;
+    if (failed.length === 0) {
+      showToast(`${createdCount} Course Outcome${createdCount !== 1 ? 's' : ''} created successfully`, 'success');
+      setCoModal({ open: false, co: null });
+    } else {
+      showToast(`Created ${createdCount} of ${rows.length}. ${failed.join('; ')}`, 'error');
+    }
+    fetchDetails();
   };
 
   const handleDeleteCO = async (co) => {
@@ -217,47 +240,21 @@ export default function CourseDetailsPage() {
     }
   };
 
-  // ─── Question Handlers ─────────────────────────────────────────────────────
-
-  const handleSaveQuestion = async (formData) => {
+  const handleEnrollClass = async (group) => {
     try {
-      if (questionModal.question) {
-        const res = await updateQuestionApi(questionModal.question._id, formData);
-        if (res.warning) {
-          showToast(`Saved with notice: ${res.warning}`, 'error');
-        } else {
-          showToast('Question updated successfully', 'success');
-        }
-      } else {
-        const res = await createQuestionApi({
-          ...formData,
-          assessmentId: questionModal.assessment._id,
-        });
-        if (res.warning) {
-          showToast(`Saved with notice: ${res.warning}`, 'error');
-        } else {
-          showToast('Question created & mapped successfully', 'success');
-        }
-      }
-      setQuestionModal({ open: false, assessment: null, question: null });
+      const res = await enrollClassApi({ courseId: id, batch: group.batch, section: group.section });
+      const added = res.data.enrolled + res.data.reactivated;
+      showToast(
+        added > 0
+          ? `Added ${added} student(s) from batch ${group.batch} section ${group.section}`
+          : `Everyone in batch ${group.batch} section ${group.section} is already enrolled`,
+        'success'
+      );
+      setClassModalOpen(false);
+      fetchEnrollments();
       fetchDetails();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Operation failed', 'error');
-    }
-  };
-
-  const handleDeleteQuestion = async (q) => {
-    if (!window.confirm(`Delete question ${q.label}?`)) return;
-    try {
-      const res = await deleteQuestionApi(q._id);
-      if (res.warning) {
-        showToast(`Deleted with notice: ${res.warning}`, 'error');
-      } else {
-        showToast('Question deleted', 'success');
-      }
-      fetchDetails();
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Could not delete question', 'error');
+      showToast(err.response?.data?.message || 'Could not add class', 'error');
     }
   };
 
@@ -282,7 +279,9 @@ export default function CourseDetailsPage() {
     );
   }
 
-  const { course, cos, assessments, enrollmentsCount } = data;
+  const { course, cos, assessments, enrollmentsCount, progress, obeTargets } = data;
+  const unmappedCOs = new Set(progress?.unmappedCOs || []);
+  const isEmptyCourse = (cos?.length || 0) === 0 && (assessments?.length || 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -317,7 +316,10 @@ export default function CourseDetailsPage() {
             </div>
             <h1 className="font-serif text-2xl font-bold text-ink tracking-tight">{course.name}</h1>
             <p className="text-sm text-muted mt-1">
-              Programme: <span className="text-ink font-medium">{course.programme?.name} ({course.programme?.code})</span> · Faculty: <span className="text-ink font-medium">{course.faculty?.name}</span>
+              Programme: <span className="text-ink font-medium">{course.programme?.name} ({course.programme?.code})</span>
+              {user?.role !== 'faculty' && (
+                <> · Faculty: <span className="text-ink font-medium">{course.faculty?.name}</span></>
+              )}
             </p>
           </div>
 
@@ -346,6 +348,12 @@ export default function CourseDetailsPage() {
           </div>
         </div>
       </div>
+
+      {isEmptyCourse && (
+        <CopySetupCard courseId={id} onCopied={fetchDetails} showToast={showToast} />
+      )}
+
+      <CourseChecklist courseId={id} progress={progress} onGoto={setActiveTab} />
 
       {/* Tabs */}
       <div className="flex border-b border-border gap-4">
@@ -403,14 +411,17 @@ export default function CourseDetailsPage() {
               <h2 className="font-serif text-base font-semibold text-ink">Course Outcomes</h2>
               <p className="text-xs text-muted">Define course-level learning outcomes with target attainment and Bloom taxonomy levels.</p>
             </div>
-            <PrimaryButton onClick={() => setCoModal({ open: true, co: null })}>
-              <Plus className="w-4 h-4" /> Add CO
+            <PrimaryButton
+              onClick={() => setCoModal({ open: true, co: null })}
+              disabled={(cos?.length || 0) >= MAX_COS}
+            >
+              <Plus className="w-4 h-4" /> {(cos?.length || 0) >= MAX_COS ? `All ${MAX_COS} COs added` : 'Add COs'}
             </PrimaryButton>
           </div>
 
           <Card>
             {!cos || cos.length === 0 ? (
-              <EmptyState message="No Course Outcomes created yet. Click 'Add CO' to define learning outcomes." />
+              <EmptyState message="No Course Outcomes created yet. Click 'Add COs' to define learning outcomes." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -419,8 +430,12 @@ export default function CourseDetailsPage() {
                       <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 w-20">Code</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3">Outcome Statement</th>
                       <th className="text-left text-xs font-semibold text-muted uppercase px-4 py-3 w-36">Bloom Level</th>
-                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-28">Target Marks</th>
-                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-28">Attainment Goal</th>
+                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-32">
+                        <span className="inline-flex items-center gap-1">Target Marks <InfoTip text={TARGET_MARKS_HINT} placement="bottom" /></span>
+                      </th>
+                      <th className="text-center text-xs font-semibold text-muted uppercase px-4 py-3 w-36">
+                        <span className="inline-flex items-center gap-1">Attainment Goal <InfoTip text={ATTAINMENT_GOAL_HINT} placement="bottom" /></span>
+                      </th>
                       <th className="px-4 py-3 w-24" />
                     </tr>
                   </thead>
@@ -432,7 +447,14 @@ export default function CourseDetailsPage() {
                             {co.code}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-ink font-medium leading-relaxed">{co.statement}</td>
+                        <td className="px-4 py-3 text-ink font-medium leading-relaxed">
+                          {co.statement}
+                          {unmappedCOs.has(co.code) && (
+                            <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-status-borderline-soft text-status-borderline border border-amber-200 align-middle">
+                              <AlertTriangle className="w-3 h-3" /> No questions yet
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="text-xs px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-medium">
                             {co.bloomLevel}
@@ -475,7 +497,7 @@ export default function CourseDetailsPage() {
 
           {!assessments || assessments.length === 0 ? (
             <Card>
-              <EmptyState message="No assessments configured yet. Create a CIE, Assignment, or SEE." />
+              <EmptyState message="No assessments configured yet. Create one, e.g. CIE 1, Assignment 1 or End Sem Exam." />
             </Card>
           ) : (
             <div className="space-y-5">
@@ -491,14 +513,8 @@ export default function CourseDetailsPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h3 className="font-serif text-lg font-bold text-ink tracking-tight">{ass.name}</h3>
-                          <span className="text-xs px-2 py-0.5 rounded bg-surface border border-border text-muted font-medium capitalize">
-                            {ass.type.replace('_', ' ')}
-                          </span>
                           <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent-soft text-accent border border-teal-200 font-semibold font-mono tabular-nums">
                             Max Marks: {ass.maxMarks}
-                          </span>
-                          <span className="text-xs text-muted tabular-nums">
-                            Weightage: {ass.weightage}x
                           </span>
                         </div>
 
@@ -527,11 +543,6 @@ export default function CourseDetailsPage() {
                           <FileSpreadsheet className="w-3.5 h-3.5" />
                           <span>Marks Grid</span>
                         </button>
-                        <PrimaryButton
-                          onClick={() => setQuestionModal({ open: true, assessment: ass, question: null })}
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Add Question
-                        </PrimaryButton>
                         <GhostButton onClick={() => setAssessmentModal({ open: true, assessment: ass })}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </GhostButton>
@@ -541,60 +552,14 @@ export default function CourseDetailsPage() {
                       </div>
                     </div>
 
-                    {/* Questions Table */}
+                    {/* Question Paper (editable) */}
                     <div className="p-4 sm:p-5">
-                      {!ass.questions || ass.questions.length === 0 ? (
-                        <div className="text-center py-6 text-xs text-muted">
-                          No questions added yet. Click &quot;Add Question&quot; above to configure Question→CO mappings.
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border bg-paper/30 text-xs text-muted uppercase">
-                                <th className="text-left py-2 px-3 w-28">Label</th>
-                                <th className="text-left py-2 px-3 w-28">Marks</th>
-                                <th className="text-left py-2 px-3">Mapped Course Outcome</th>
-                                <th className="py-2 px-3 w-24 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                              {ass.questions.map((q) => (
-                                <tr key={q._id} className="hover:bg-paper/40 transition-colors">
-                                  <td className="py-2.5 px-3 font-mono font-bold text-ink text-xs">
-                                    {q.label}
-                                  </td>
-                                  <td className="py-2.5 px-3 font-mono font-semibold text-muted text-xs tabular-nums">
-                                    {q.maxMarks} marks
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-accent-soft text-accent border border-teal-200 shrink-0">
-                                        {q.co?.code || '—'}
-                                      </span>
-                                      <span className="text-xs text-muted line-clamp-1">
-                                        {q.co?.statement}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2.5 px-3 text-right">
-                                    <div className="flex gap-1.5 justify-end">
-                                      <GhostButton
-                                        onClick={() => setQuestionModal({ open: true, assessment: ass, question: q })}
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </GhostButton>
-                                      <DangerButton onClick={() => handleDeleteQuestion(q)}>
-                                        <Trash2 className="w-3 h-3" />
-                                      </DangerButton>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                      <QuestionPaperBuilder
+                        assessment={ass}
+                        cos={cos || []}
+                        onSaved={fetchDetails}
+                        showToast={showToast}
+                      />
                     </div>
                   </div>
                 );
@@ -610,14 +575,17 @@ export default function CourseDetailsPage() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h2 className="font-serif text-base font-semibold text-ink">Enrolled Students</h2>
-              <p className="text-xs text-muted">View active course enrollments, enroll single students, or bulk enroll via roll numbers.</p>
+              <p className="text-xs text-muted">Add a whole class section at once. Use roll numbers or single enrollment for students outside a section.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <GhostButton onClick={() => setBulkEnrollModal({ open: true })}>
-                <Users className="w-4 h-4" /> Bulk Enroll
+            <div className="flex items-center gap-2 flex-wrap">
+              <GhostButton onClick={() => setEnrollModal({ open: true })}>
+                <UserPlus className="w-4 h-4" /> One Student
               </GhostButton>
-              <PrimaryButton onClick={() => setEnrollModal({ open: true })}>
-                <UserPlus className="w-4 h-4" /> Enroll Student
+              <GhostButton onClick={() => setBulkEnrollModal({ open: true })}>
+                <Users className="w-4 h-4" /> By Roll Numbers
+              </GhostButton>
+              <PrimaryButton onClick={() => setClassModalOpen(true)}>
+                <GraduationCap className="w-4 h-4" /> Add Class Section
               </PrimaryButton>
             </div>
           </div>
@@ -680,6 +648,8 @@ export default function CourseDetailsPage() {
       <COFormModal
         open={coModal.open}
         co={coModal.co}
+        existingCodes={(cos || []).map((c) => c.code)}
+        departmentTargets={obeTargets}
         onClose={() => setCoModal({ open: false, co: null })}
         onSave={handleSaveCO}
       />
@@ -690,16 +660,6 @@ export default function CourseDetailsPage() {
         assessment={assessmentModal.assessment}
         onClose={() => setAssessmentModal({ open: false, assessment: null })}
         onSave={handleSaveAssessment}
-      />
-
-      {/* ─── Question Modal ─────────────────────────────────────────────────── */}
-      <QuestionFormModal
-        open={questionModal.open}
-        assessment={questionModal.assessment}
-        question={questionModal.question}
-        cos={cos || []}
-        onClose={() => setQuestionModal({ open: false, assessment: null, question: null })}
-        onSave={handleSaveQuestion}
       />
 
       {/* ─── Marks Grid Modal ────────────────────────────────────────────────── */}
@@ -730,96 +690,148 @@ export default function CourseDetailsPage() {
         onClose={() => setBulkEnrollModal({ open: false })}
         onBulkEnroll={handleBulkEnroll}
       />
+
+      {/* ─── Add Class Section Modal ─────────────────────────────────────────── */}
+      <AddClassModal
+        open={classModalOpen}
+        courseId={id}
+        onClose={() => setClassModalOpen(false)}
+        onAdd={handleEnrollClass}
+      />
     </div>
   );
 }
 
 // ─── Modal Subcomponents ──────────────────────────────────────────────────────
 
-function COFormModal({ open, co, onClose, onSave }) {
-  const [code, setCode] = useState('');
-  const [statement, setStatement] = useState('');
-  const [bloomLevel, setBloomLevel] = useState('L3: Apply');
-  const [targetMarksPercentage, setTargetMarksPercentage] = useState(60);
-  const [targetAttainmentPercentage, setTargetAttainmentPercentage] = useState(70);
+function COFormModal({ open, co, existingCodes, departmentTargets, onClose, onSave }) {
+  const [rows, setRows] = useState([]);
+  // An existing CO keeps its own targets; new COs get the department's
+  const shownTargets = co
+    ? { targetMarksPercentage: co.targetMarksPercentage, targetAttainmentPercentage: co.targetAttainmentPercentage }
+    : departmentTargets || { targetMarksPercentage: 60, targetAttainmentPercentage: 70 };
+
+  // New COs take the free codes in order (CO1, CO2, …), so there is nothing to pick
+  const freeCodes = useMemo(
+    () => CO_CODES.filter((c) => !(existingCodes || []).includes(c)),
+    [existingCodes]
+  );
+  // A course needs at least MIN_COS outcomes: open enough sections to reach that
+  const minRows = co ? 1 : Math.min(freeCodes.length, Math.max(1, MIN_COS - (existingCodes || []).length));
 
   useEffect(() => {
+    if (!open) return;
     if (co) {
-      setCode(co.code || '');
-      setStatement(co.statement || '');
-      setBloomLevel(co.bloomLevel || 'L3: Apply');
-      setTargetMarksPercentage(co.targetMarksPercentage ?? 60);
-      setTargetAttainmentPercentage(co.targetAttainmentPercentage ?? 70);
+      setRows([{ statement: co.statement || '', bloomLevel: co.bloomLevel || 'L3: Apply' }]);
     } else {
-      setCode('');
-      setStatement('');
-      setBloomLevel('L3: Apply');
-      setTargetMarksPercentage(60);
-      setTargetAttainmentPercentage(70);
+      setRows(Array.from({ length: minRows }, () => ({ statement: '', bloomLevel: 'L3: Apply' })));
     }
-  }, [co, open]);
+  }, [co, open, minRows]);
+
+  const codeFor = (index) => (co ? co.code : freeCodes[index]);
+
+  const updateRow = (index, patch) => {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  };
+
+  const addRow = () => setRows((prev) => [...prev, { statement: '', bloomLevel: 'L3: Apply' }]);
+
+  const removeRow = (index) => setRows((prev) => prev.filter((_, i) => i !== index));
+
+  const canAddAnother = !co && rows.length < freeCodes.length;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({
-      code,
-      statement,
-      bloomLevel,
-      targetMarksPercentage: Number(targetMarksPercentage),
-      targetAttainmentPercentage: Number(targetAttainmentPercentage),
-    });
+    onSave(
+      rows.map((r, i) => ({
+        code: codeFor(i),
+        statement: r.statement.trim(),
+        bloomLevel: r.bloomLevel,
+      }))
+    );
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={co ? `Edit ${co.code}` : 'Add Course Outcome'}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title={co ? `Edit ${co.code}` : 'Add Course Outcomes'}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormInput
-          label="CO Code (e.g. CO1, CO2)"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="CO1"
-          required
-        />
-        <div>
-          <label className="block text-xs font-medium text-muted mb-1">Outcome Statement *</label>
-          <textarea
-            value={statement}
-            onChange={(e) => setStatement(e.target.value)}
-            rows={3}
-            required
-            placeholder="Describe what students will be able to do..."
-            className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
-          />
+        {!co && (existingCodes || []).length < MIN_COS && (
+          <p className="text-xs text-muted">
+            Every course needs at least {MIN_COS} Course Outcomes, and can have up to {MAX_COS}.
+          </p>
+        )}
+
+        <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+          {rows.map((row, index) => (
+            <div key={index} className="rounded-xl border border-border bg-paper/40 p-3 space-y-2.5">
+              <div className="flex items-end gap-3">
+                <div className="shrink-0 pb-1.5">
+                  <span className="inline-block font-mono text-sm font-bold text-ink bg-surface border border-border rounded-lg px-3 py-1.5">
+                    {codeFor(index)}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <FormSelect
+                    label="Bloom's Taxonomy Level"
+                    value={row.bloomLevel}
+                    onChange={(e) => updateRow(index, { bloomLevel: e.target.value })}
+                    options={BLOOM_LEVELS.map((l) => ({ value: l, label: l }))}
+                  />
+                </div>
+                {/* Only the optional extra COs (beyond the required ones) can be removed */}
+                {!co && index >= minRows && (
+                  <DangerButton onClick={() => removeRow(index)} className="mb-0.5" title={`Remove ${codeFor(index)}`}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </DangerButton>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Outcome Statement *</label>
+                <textarea
+                  value={row.statement}
+                  onChange={(e) => updateRow(index, { statement: e.target.value })}
+                  rows={2}
+                  required
+                  placeholder="Describe what students will be able to do..."
+                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+                />
+              </div>
+            </div>
+          ))}
         </div>
-        <FormSelect
-          label="Bloom's Taxonomy Level"
-          value={bloomLevel}
-          onChange={(e) => setBloomLevel(e.target.value)}
-          options={BLOOM_LEVELS.map((l) => ({ value: l, label: l }))}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <FormInput
-            label="Target Marks %"
-            type="number"
-            value={targetMarksPercentage}
-            onChange={(e) => setTargetMarksPercentage(e.target.value)}
-            min={0}
-            max={100}
-            required
-          />
-          <FormInput
-            label="Attainment Goal %"
-            type="number"
-            value={targetAttainmentPercentage}
-            onChange={(e) => setTargetAttainmentPercentage(e.target.value)}
-            min={0}
-            max={100}
-            required
-          />
+
+        {canAddAnother && (
+          <button
+            type="button"
+            onClick={addRow}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-teal-300 bg-accent-soft/50 py-2 text-xs font-semibold text-accent hover:bg-accent-soft transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add CO ({freeCodes[rows.length]})
+          </button>
+        )}
+
+        {/* Targets are department policy, set by the coordinator; shown here for reference only */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-paper/40 px-3 py-2 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            Target Marks <strong className="text-ink tabular-nums">{shownTargets.targetMarksPercentage}%</strong>
+            <InfoTip text={TARGET_MARKS_HINT} />
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            Attainment Goal <strong className="text-ink tabular-nums">{shownTargets.targetAttainmentPercentage}%</strong>
+            <InfoTip text={ATTAINMENT_GOAL_HINT} />
+          </span>
+          <span className="text-[11px]">Set by your school / centre coordinator</span>
         </div>
+
         <div className="flex justify-end gap-2 pt-2">
-          <GhostButton type="button" onClick={onClose}>Cancel</GhostButton>
-          <PrimaryButton type="submit">{co ? 'Update' : 'Create'}</PrimaryButton>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <PrimaryButton type="submit">
+            {co ? 'Update' : rows.length > 1 ? `Create ${rows.length} COs` : 'Create'}
+          </PrimaryButton>
         </div>
       </form>
     </Modal>
@@ -828,21 +840,15 @@ function COFormModal({ open, co, onClose, onSave }) {
 
 function AssessmentFormModal({ open, assessment, onClose, onSave }) {
   const [name, setName] = useState('');
-  const [type, setType] = useState('internal');
   const [maxMarks, setMaxMarks] = useState(30);
-  const [weightage, setWeightage] = useState(1.0);
 
   useEffect(() => {
     if (assessment) {
       setName(assessment.name || '');
-      setType(assessment.type || 'internal');
       setMaxMarks(assessment.maxMarks ?? 30);
-      setWeightage(assessment.weightage ?? 1.0);
     } else {
       setName('');
-      setType('internal');
       setMaxMarks(30);
-      setWeightage(1.0);
     }
   }, [assessment, open]);
 
@@ -850,9 +856,7 @@ function AssessmentFormModal({ open, assessment, onClose, onSave }) {
     e.preventDefault();
     onSave({
       name,
-      type,
       maxMarks: Number(maxMarks),
-      weightage: Number(weightage),
     });
   };
 
@@ -866,111 +870,17 @@ function AssessmentFormModal({ open, assessment, onClose, onSave }) {
           placeholder="e.g. CIE 1, Quiz 1, End Sem Exam"
           required
         />
-        <FormSelect
-          label="Assessment Type"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          options={ASSESSMENT_TYPES}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <FormInput
-            label="Maximum Marks"
-            type="number"
-            value={maxMarks}
-            onChange={(e) => setMaxMarks(e.target.value)}
-            min={1}
-            required
-          />
-          <FormInput
-            label="Weightage"
-            type="number"
-            value={weightage}
-            onChange={(e) => setWeightage(e.target.value)}
-            step="0.1"
-            min={0}
-            required
-          />
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <GhostButton type="button" onClick={onClose}>Cancel</GhostButton>
-          <PrimaryButton type="submit">{assessment ? 'Update' : 'Create'}</PrimaryButton>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-function QuestionFormModal({ open, assessment, question, cos, onClose, onSave }) {
-  const [label, setLabel] = useState('');
-  const [maxMarks, setMaxMarks] = useState(5);
-  const [coId, setCoId] = useState('');
-
-  useEffect(() => {
-    if (question) {
-      setLabel(question.label || '');
-      setMaxMarks(question.maxMarks ?? 5);
-      setCoId(question.co?._id || question.co || (cos[0]?._id || ''));
-    } else {
-      setLabel('');
-      setMaxMarks(5);
-      setCoId((prev) => (prev && cos.some((c) => c._id === prev) ? prev : (cos[0]?._id || '')));
-    }
-  }, [question, cos, open]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({
-      label,
-      maxMarks: Number(maxMarks),
-      coId,
-    });
-  };
-
-  if (!cos || cos.length === 0) {
-    return (
-      <Modal open={open} onClose={onClose} title="Course Outcomes Required">
-        <div className="space-y-4 py-2">
-          <p className="text-sm text-status-borderline bg-status-borderline-soft border border-amber-200 rounded-lg p-3">
-            Please define at least one Course Outcome (CO) for this course before creating questions.
-          </p>
-          <div className="flex justify-end">
-            <PrimaryButton onClick={onClose}>Close</PrimaryButton>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title={question ? `Edit ${question.label}` : `Add Question to ${assessment?.name}`}>
-      <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
-          label="Question Label"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. Q1, Q1a, Q2"
-          required
-        />
-        <FormInput
-          label="Max Marks for Question"
+          label="Maximum Marks"
           type="number"
           value={maxMarks}
           onChange={(e) => setMaxMarks(e.target.value)}
           min={1}
           required
         />
-        <FormSelect
-          label="Mapped Course Outcome *"
-          value={coId}
-          onChange={(e) => setCoId(e.target.value)}
-          options={cos.map((c) => ({
-            value: c._id,
-            label: `${c.code}: ${c.statement.slice(0, 45)}... (${c.bloomLevel})`,
-          }))}
-        />
         <div className="flex justify-end gap-2 pt-2">
           <GhostButton type="button" onClick={onClose}>Cancel</GhostButton>
-          <PrimaryButton type="submit">{question ? 'Update Question' : 'Save Question'}</PrimaryButton>
+          <PrimaryButton type="submit">{assessment ? 'Update' : 'Create'}</PrimaryButton>
         </div>
       </form>
     </Modal>
@@ -1064,6 +974,63 @@ function BulkEnrollModal({ open, onClose, onBulkEnroll }) {
           <PrimaryButton type="submit">Bulk Enroll</PrimaryButton>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+function AddClassModal({ open, courseId, onClose, onAdd }) {
+  const [groups, setGroups] = useState(null);
+  const [adding, setAdding] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setGroups(null);
+    listClassGroupsApi(courseId)
+      .then((res) => setGroups(res.data || []))
+      .catch(() => setGroups([]));
+  }, [open, courseId]);
+
+  const handleAdd = async (g) => {
+    setAdding(`${g.batch}|${g.section}`);
+    await onAdd(g);
+    setAdding(null);
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Add Class Section">
+      <div className="space-y-3">
+        {groups === null ? (
+          <Spinner />
+        ) : groups.length === 0 ? (
+          <p className="text-xs text-muted">
+            No class lists have been uploaded for this programme yet. Ask your school / centre coordinator to upload them
+            under School / Centre Setup, or add students by roll number.
+          </p>
+        ) : (
+          <div className="divide-y divide-border rounded-xl border border-border">
+            {groups.map((g) => {
+              const key = `${g.batch}|${g.section}`;
+              const allIn = g.alreadyEnrolled === g.count;
+              return (
+                <div key={key} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div>
+                    <div className="text-sm font-semibold text-ink">Batch {g.batch} · Section {g.section}</div>
+                    <div className="text-xs text-muted tabular-nums">
+                      {g.count} students{g.alreadyEnrolled > 0 ? ` · ${g.alreadyEnrolled} already enrolled` : ''}
+                    </div>
+                  </div>
+                  <PrimaryButton onClick={() => handleAdd(g)} disabled={allIn || adding === key}>
+                    {allIn ? 'Added' : adding === key ? 'Adding...' : `Add ${g.count - g.alreadyEnrolled}`}
+                  </PrimaryButton>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex justify-end pt-1">
+          <GhostButton onClick={onClose}>Close</GhostButton>
+        </div>
+      </div>
     </Modal>
   );
 }

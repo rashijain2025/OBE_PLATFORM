@@ -397,7 +397,9 @@ describe('Phase 4 Enrollment & Marks Validation Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.imported).toBe(2);
+      // imported counts saved marks: 2 students × 2 questions
+      expect(res.body.data.studentRows).toBe(2);
+      expect(res.body.data.imported).toBe(4);
 
       const s1q1 = await StudentMarks.findOne({ student: student1._id, question: q1._id });
       expect(s1q1.marksObtained).toBe(10);
@@ -417,8 +419,27 @@ describe('Phase 4 Enrollment & Marks Validation Tests', () => {
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.errors.length).toBeGreaterThan(0);
-      expect(res.body.data.skipped).toBeGreaterThanOrEqual(1);
+      const problems = res.body.data.issues.map((i) => i.problem).join(' | ');
+      expect(problems).toMatch(/Not enrolled/);
+      expect(problems).toMatch(/not a valid mark/);
+      // The valid Q2 mark of the enrolled student is still imported
+      expect(res.body.data.imported).toBe(1);
+    });
+
+    it('CSV import dry run reports without saving anything', async () => {
+      const csv = `RollNo,Q1,Q2\n22IT002,AB,12`;
+      const before = await StudentMarks.findOne({ student: student2._id, question: q2._id });
+
+      const res = await request(app)
+        .post('/api/marks/csv-import')
+        .set('Authorization', `Bearer ${facultyAToken}`)
+        .send({ assessmentId: assessmentA1._id, csvText: csv, dryRun: true });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.dryRun).toBe(true);
+      expect(res.body.data.cellsToImport).toBe(2);
+      const after = await StudentMarks.findOne({ student: student2._id, question: q2._id });
+      expect(after?.marksObtained ?? null).toBe(before?.marksObtained ?? null);
     });
   });
 });

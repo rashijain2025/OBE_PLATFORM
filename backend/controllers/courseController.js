@@ -35,6 +35,34 @@ class CourseController {
     } catch (err) { next(err); }
   }
 
+  async progressList(req, res, next) {
+    try {
+      const data = await courseService.listCourseProgress(req.user);
+      res.json({ success: true, data, message: 'Course progress retrieved successfully' });
+    } catch (err) { next(err); }
+  }
+
+  async copySources(req, res, next) {
+    try {
+      const data = await courseService.listCopySources(req.params.id, { role: req.user.role, userId: req.user._id });
+      res.json({ success: true, data, message: 'Copy sources retrieved successfully' });
+    } catch (err) { next(err); }
+  }
+
+  async copySetup(req, res, next) {
+    try {
+      const { sourceCourseId } = req.body;
+      if (!sourceCourseId) {
+        return res.status(400).json({ success: false, data: null, message: 'sourceCourseId is required' });
+      }
+      const data = await courseService.copySetup(req.params.id, sourceCourseId, {
+        role: req.user.role,
+        userId: req.user._id,
+      });
+      res.status(201).json({ success: true, data, message: 'Course setup copied successfully' });
+    } catch (err) { next(err); }
+  }
+
   async create(req, res, next) {
     try {
       const { code, name, semester, programme, faculty, academicYear, credits } = req.body;

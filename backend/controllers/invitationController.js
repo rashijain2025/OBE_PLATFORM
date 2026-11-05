@@ -74,7 +74,7 @@ class InvitationController {
       res.json({
         success: true,
         data: faculty,
-        message: 'Department faculty retrieved successfully',
+        message: 'School / Centre faculty retrieved successfully',
       });
     } catch (err) {
       next(err);

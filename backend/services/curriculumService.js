@@ -14,7 +14,7 @@ class CurriculumService {
 
     if (user && user.role === 'coordinator' && user.department) {
       if (String(programme.department._id || programme.department) !== String(user.department._id || user.department)) {
-        const err = new Error('Forbidden: You do not have coordinator access to this programme department');
+        const err = new Error('Forbidden: You do not have coordinator access to the school / centre of this programme');
         err.statusCode = 403;
         throw err;
       }

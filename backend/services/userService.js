@@ -1,9 +1,149 @@
-const { User } = require('../models');
+const { User, Programme } = require('../models');
 
 /**
  * Service for admin user management (CRUD + password reset)
  */
 class UserService {
+  /**
+   * Programme the user may manage class lists for; coordinators are limited to their department
+   */
+  async resolveManagedProgramme(programmeId, user) {
+    const programme = await Programme.findById(programmeId).select('name code department');
+    if (!programme) {
+      const err = new Error('Programme not found');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (user.role === 'coordinator') {
+      const ownDept = user.department?._id || user.department;
+      if (!ownDept || String(programme.department) !== String(ownDept)) {
+        const err = new Error('Forbidden: This programme is outside your school / centre');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+    return programme;
+  }
+
+  /**
+   * Class lists (programme + batch + section) with student counts
+   */
+  async listClassLists(user) {
+    const programmeFilter = {};
+    if (user.role === 'coordinator') {
+      programmeFilter.department = user.department?._id || user.department || null;
+    }
+    const programmes = await Programme.find(programmeFilter).select('name code');
+    const programmeById = new Map(programmes.map((p) => [String(p._id), p]));
+
+    const groups = await User.aggregate([
+      {
+        $match: {
+          role: 'student',
+          isActive: true,
+          programme: { $in: programmes.map((p) => p._id) },
+          batch: { $ne: null },
+          section: { $ne: null },
+        },
+      },
+      { $group: { _id: { programme: '$programme', batch: '$batch', section: '$section' }, count: { $sum: 1 } } },
+      { $sort: { '_id.batch': -1, '_id.section': 1 } },
+    ]);
+
+    return groups.map((g) => {
+      const p = programmeById.get(String(g._id.programme));
+      return {
+        programme: { _id: p._id, name: p.name, code: p.code },
+        batch: g._id.batch,
+        section: g._id.section,
+        count: g.count,
+      };
+    });
+  }
+
+  async listClassStudents({ programmeId, batch, section }, user) {
+    await this.resolveManagedProgramme(programmeId, user);
+    return User.find({ role: 'student', isActive: true, programme: programmeId, batch, section: String(section).toUpperCase() })
+      .select('name email rollNo batch section')
+      .sort({ rollNo: 1 });
+  }
+
+  /**
+   * Upload a class list: creates new student records and updates existing ones (matched by roll number)
+   * students: [{ rollNo, name, email? }]
+   */
+  async uploadClassList({ programmeId, batch, section, students }, user) {
+    const programme = await this.resolveManagedProgramme(programmeId, user);
+    const cleanBatch = String(batch || '').trim();
+    const cleanSection = String(section || '').trim().toUpperCase();
+    if (!cleanBatch || !cleanSection) {
+      const err = new Error('Batch and section are required');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!Array.isArray(students) || students.length === 0) {
+      const err = new Error('The class list has no students');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const result = { created: 0, updated: 0, skipped: [] };
+    const seenRolls = new Set();
+
+    for (const [index, row] of students.entries()) {
+      const rollNo = String(row.rollNo || '').trim().toUpperCase();
+      const name = String(row.name || '').trim();
+      if (!rollNo) {
+        result.skipped.push({ row: index + 1, rollNo: '', reason: 'Missing roll number' });
+        continue;
+      }
+      if (seenRolls.has(rollNo)) {
+        result.skipped.push({ row: index + 1, rollNo, reason: 'Duplicate roll number in this list' });
+        continue;
+      }
+      seenRolls.add(rollNo);
+
+      const classFields = {
+        programme: programme._id,
+        department: programme.department,
+        batch: cleanBatch,
+        section: cleanSection,
+        isActive: true,
+      };
+
+      const existing = await User.findOne({ rollNo: { $regex: `^${rollNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+      if (existing) {
+        if (existing.role !== 'student') {
+          result.skipped.push({ row: index + 1, rollNo, reason: 'Roll number belongs to a staff account' });
+          continue;
+        }
+        Object.assign(existing, classFields);
+        if (name) existing.name = name;
+        await existing.save();
+        result.updated++;
+        continue;
+      }
+
+      const email = String(row.email || '').trim().toLowerCase() || `${rollNo.toLowerCase()}@student.obe.edu`;
+      if (await User.exists({ email })) {
+        result.skipped.push({ row: index + 1, rollNo, reason: `Email ${email} is already used by another record` });
+        continue;
+      }
+
+      await User.create({
+        ...classFields,
+        name: name || `Student ${rollNo}`,
+        email,
+        rollNo,
+        role: 'student',
+        passwordHash: '$student_record_no_login$',
+      });
+      result.created++;
+    }
+
+    return result;
+  }
+
   /**
    * List all users, optionally filtered by role
    */

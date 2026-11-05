@@ -15,7 +15,7 @@ const assessmentSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ['internal', 'assignment', 'quiz', 'lab', 'end_sem'],
-      required: [true, 'Assessment type is required'],
+      default: 'internal',
     },
     maxMarks: {
       type: Number,

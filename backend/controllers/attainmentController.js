@@ -23,6 +23,19 @@ class AttainmentController {
     } catch (err) { next(err); }
   }
 
+  async exportReport(req, res, next) {
+    try {
+      const { courseId, target } = req.query;
+      if (!courseId) {
+        return res.status(400).json({ success: false, data: null, message: 'courseId query param is required' });
+      }
+      const { buffer, filename } = await attainmentService.generateCourseReportWorkbook(courseId, target, req.user);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (err) { next(err); }
+  }
+
   async exportCSV(req, res, next) {
     try {
       const { courseId, target } = req.query;

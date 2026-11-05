@@ -1,5 +1,6 @@
 const { Invitation, User, Programme, Department, Course } = require('../models');
 const emailService = require('./emailService');
+const { isAllowedEmail, describeAllowedDomains } = require('../utils/emailDomains');
 
 class InvitationService {
   /**
@@ -18,7 +19,7 @@ class InvitationService {
     }
 
     if (!departmentId || !programmeId) {
-      const err = new Error('Coordinator has no assigned department or programme. Please contact administrator.');
+      const err = new Error('Coordinator has no assigned school / centre or programme. Please contact administrator.');
       err.statusCode = 400;
       throw err;
     }
@@ -58,10 +59,6 @@ class InvitationService {
       throw err;
     }
 
-    const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAIN || 'mitsgwalior.in')
-      .toLowerCase()
-      .split(',')
-      .map((d) => d.trim().replace(/^@/, ''));
     const results = [];
 
     for (const raw of emails) {
@@ -80,12 +77,11 @@ class InvitationService {
       }
 
       // 2. Exact domain match check
-      const parts = email.split('@');
-      if (parts.length !== 2 || !allowedDomains.includes(parts[1])) {
+      if (!isAllowedEmail(email)) {
         results.push({
           email,
           status: 'domain_rejected',
-          message: `Only official @${allowedDomains.join(', @')} addresses are allowed`,
+          message: `Only ${describeAllowedDomains()} addresses are allowed`,
         });
         continue;
       }
@@ -178,7 +174,7 @@ class InvitationService {
 
     // Ownership check
     if (String(invite.department) !== String(departmentId)) {
-      const err = new Error('Forbidden: You can only resend invitations for your own department');
+      const err = new Error('Forbidden: You can only resend invitations for your own school / centre');
       err.statusCode = 403;
       throw err;
     }
@@ -220,7 +216,7 @@ class InvitationService {
 
     // Ownership check
     if (String(invite.department) !== String(departmentId)) {
-      const err = new Error('Forbidden: You can only revoke invitations for your own department');
+      const err = new Error('Forbidden: You can only revoke invitations for your own school / centre');
       err.statusCode = 403;
       throw err;
     }
@@ -297,7 +293,7 @@ class InvitationService {
     }
 
     if (String(facultyUser.department) !== String(departmentId)) {
-      const err = new Error('Cannot assign courses to faculty outside your department');
+      const err = new Error('Cannot assign courses to faculty outside your school / centre');
       err.statusCode = 403;
       throw err;
     }

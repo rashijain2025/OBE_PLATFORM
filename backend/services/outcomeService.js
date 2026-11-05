@@ -1,4 +1,16 @@
 const { CourseOutcome, Course, Question } = require('../models');
+const departmentService = require('./departmentService');
+
+// A course has at most 5 Course Outcomes: CO1 to CO5
+const ALLOWED_CO_CODES = ['CO1', 'CO2', 'CO3', 'CO4', 'CO5'];
+
+function assertAllowedCode(code) {
+  if (!ALLOWED_CO_CODES.includes(code)) {
+    const err = new Error('A course can have at most 5 Course Outcomes: use CO1 to CO5');
+    err.statusCode = 400;
+    throw err;
+  }
+}
 
 class OutcomeService {
   /**
@@ -59,6 +71,7 @@ class OutcomeService {
     await this.verifyCourseAccess(courseId, user);
 
     const formattedCode = code.toUpperCase().trim();
+    assertAllowedCode(formattedCode);
     const existing = await CourseOutcome.findOne({ course: courseId, code: formattedCode });
     if (existing) {
       const err = new Error(`Course Outcome ${formattedCode} already exists for this course`);
@@ -66,12 +79,19 @@ class OutcomeService {
       throw err;
     }
 
+    // Targets not supplied come from the department the coordinator configured
+    const departmentTargets = await departmentService.getTargetsForCourse(courseId);
+
     const co = await CourseOutcome.create({
       course: courseId,
       code: formattedCode,
       statement: statement.trim(),
-      targetMarksPercentage: targetMarksPercentage !== undefined ? Number(targetMarksPercentage) : 60,
-      targetAttainmentPercentage: targetAttainmentPercentage !== undefined ? Number(targetAttainmentPercentage) : 70,
+      targetMarksPercentage:
+        targetMarksPercentage !== undefined ? Number(targetMarksPercentage) : departmentTargets.targetMarksPercentage,
+      targetAttainmentPercentage:
+        targetAttainmentPercentage !== undefined
+          ? Number(targetAttainmentPercentage)
+          : departmentTargets.targetAttainmentPercentage,
       bloomLevel: bloomLevel || 'L3: Apply',
     });
 
@@ -93,6 +113,7 @@ class OutcomeService {
 
     if (data.code && data.code.toUpperCase().trim() !== co.code) {
       const formattedCode = data.code.toUpperCase().trim();
+      assertAllowedCode(formattedCode);
       const existing = await CourseOutcome.findOne({ course: co.course, code: formattedCode });
       if (existing) {
         const err = new Error(`Course Outcome ${formattedCode} already exists for this course`);
@@ -124,7 +145,7 @@ class OutcomeService {
 
     await this.verifyCourseAccess(co.course, user);
 
-    const mappedQuestionsCount = await Question.countDocuments({ co: id });
+    const mappedQuestionsCount = await Question.countDocuments({ $or: [{ co: id }, { cos: id }] });
     if (mappedQuestionsCount > 0) {
       const err = new Error(`Cannot delete Course Outcome: ${mappedQuestionsCount} question(s) are mapped to it`);
       err.statusCode = 400;

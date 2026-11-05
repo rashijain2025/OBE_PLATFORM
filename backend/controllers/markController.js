@@ -22,9 +22,9 @@ class MarkController {
 
   async importCSV(req, res, next) {
     try {
-      const { assessmentId, csvText, rows } = req.body;
-      const result = await markService.importCSV({ assessmentId, csvText, rows }, req.user);
-      res.json({ success: true, data: result, message: 'CSV import processed' });
+      const { assessmentId, csvText, rows, dryRun } = req.body;
+      const result = await markService.importCSV({ assessmentId, csvText, rows, dryRun: Boolean(dryRun) }, req.user);
+      res.json({ success: true, data: result, message: dryRun ? 'Import preview ready' : 'Marks imported' });
     } catch (err) { next(err); }
   }
 }

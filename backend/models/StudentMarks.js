@@ -27,6 +27,11 @@ const studentMarksSchema = new mongoose.Schema(
       default: null, // null represents absent / not graded yet
       min: 0,
     },
+    // Marked "AB" by faculty: counts as entered for progress, excluded from attainment like a blank
+    isAbsent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

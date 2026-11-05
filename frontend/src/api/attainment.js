@@ -1,4 +1,5 @@
 import api from './axios';
+import { saveBlob } from '../utils/spreadsheet';
 
 export const getCourseCOAttainmentApi = async (courseId, target = 40) => {
   const res = await api.get(`/attainment?courseId=${courseId}&target=${target}`);
@@ -15,6 +16,14 @@ export const exportAttainmentCSVUrl = (courseId, target = 40) => {
   const token = localStorage.getItem('token');
   const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
   return `${baseURL}/attainment/export?courseId=${courseId}&target=${target}${tokenParam}`;
+};
+
+export const downloadCourseReport = async (courseId, target = 40, courseCode = 'Course') => {
+  const res = await api.get(`/attainment/report.xlsx?courseId=${courseId}&target=${target}`, {
+    responseType: 'blob',
+  });
+  const match = /filename="([^"]+)"/.exec(res.headers['content-disposition'] || '');
+  saveBlob(res.data, match ? match[1] : `${courseCode}_Course_Report.xlsx`);
 };
 
 export const downloadAttainmentCSV = async (courseId, target = 40, courseCode = 'Course') => {

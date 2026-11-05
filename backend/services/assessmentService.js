@@ -64,7 +64,10 @@ class AssessmentService {
       throw err;
     }
 
-    const questions = await Question.find({ assessment: id }).populate('co', 'code statement bloomLevel').sort({ label: 1 });
+    const questions = await Question.find({ assessment: id })
+      .populate('cos', 'code statement bloomLevel')
+      .populate('co', 'code statement bloomLevel')
+      .sort({ label: 1 });
     const questionMarksSum = questions.reduce((sum, q) => sum + q.maxMarks, 0);
     const warning =
       questions.length > 0 && questionMarksSum !== assessment.maxMarks
@@ -84,8 +87,8 @@ class AssessmentService {
    */
   async createAssessment(data, user) {
     const { courseId, name, type, maxMarks, weightage, date } = data;
-    if (!courseId || !name || !type || maxMarks === undefined) {
-      const err = new Error('courseId, name, type, and maxMarks are required');
+    if (!courseId || !name || maxMarks === undefined) {
+      const err = new Error('courseId, name, and maxMarks are required');
       err.statusCode = 400;
       throw err;
     }
@@ -102,7 +105,7 @@ class AssessmentService {
     const assessment = await Assessment.create({
       course: courseId,
       name: name.trim(),
-      type,
+      type: type || 'internal',
       maxMarks: Number(maxMarks),
       weightage: weightage !== undefined ? Number(weightage) : 1.0,
       date: date ? new Date(date) : new Date(),

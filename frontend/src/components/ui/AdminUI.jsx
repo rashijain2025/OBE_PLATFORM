@@ -1,6 +1,47 @@
 /**
  * Shared UI primitives for Admin pages
  */
+import { useId } from 'react';
+
+/**
+ * Small "?" button that explains a field on hover or keyboard focus
+ */
+export function InfoTip({ text, placement = 'top' }) {
+  const tipId = useId();
+  return (
+    <span className="relative inline-flex group align-middle">
+      <button
+        type="button"
+        aria-label="What does this mean?"
+        aria-describedby={tipId}
+        className="w-4 h-4 inline-flex items-center justify-center rounded-full border border-border bg-paper text-[10px] font-bold text-muted hover:text-ink hover:border-ink focus:outline-none focus:ring-2 focus:ring-accent/50 cursor-help transition-colors"
+      >
+        ?
+      </button>
+      <span
+        id={tipId}
+        role="tooltip"
+        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${
+          placement === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
+        } z-50 w-64 rounded-lg bg-ink px-3 py-2 text-xs font-normal normal-case tracking-normal leading-relaxed text-paper shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function FieldLabel({ label, id, hint }) {
+  if (!label) return null;
+  return (
+    <div className="flex items-center gap-1.5 mb-1.5">
+      <label htmlFor={id} className="block text-xs font-medium text-muted">
+        {label}
+      </label>
+      {hint && <InfoTip text={hint} />}
+    </div>
+  );
+}
 
 export function PageHeader({ title, subtitle, action }) {
   return (
@@ -35,9 +76,12 @@ export function PrimaryButton({ children, onClick, type = 'button', disabled = f
   );
 }
 
-export function DangerButton({ children, onClick, disabled = false, className = '' }) {
+// type defaults to "button": inside a <form> a button without a type submits it
+export function DangerButton({ children, onClick, disabled = false, className = '', type = 'button', title }) {
   return (
     <button
+      type={type}
+      title={title}
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-status-below-soft hover:bg-red-100 text-status-below border border-red-200 text-xs font-medium transition-colors disabled:opacity-50 ${className}`}
@@ -47,9 +91,12 @@ export function DangerButton({ children, onClick, disabled = false, className = 
   );
 }
 
-export function GhostButton({ children, onClick, className = '' }) {
+export function GhostButton({ children, onClick, className = '', type = 'button', title, disabled = false }) {
   return (
     <button
+      type={type}
+      title={title}
+      disabled={disabled}
       onClick={onClick}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface hover:bg-paper text-muted hover:text-ink border border-border text-xs font-medium transition-colors ${className}`}
     >
@@ -70,14 +117,10 @@ export function SearchInput({ value, onChange, placeholder = 'Search...' }) {
   );
 }
 
-export function FormInput({ label, id, error, ...props }) {
+export function FormInput({ label, id, error, hint, ...props }) {
   return (
     <div>
-      {label && (
-        <label htmlFor={id} className="block text-xs font-medium text-muted mb-1.5">
-          {label}
-        </label>
-      )}
+      <FieldLabel label={label} id={id} hint={hint} />
       <input
         id={id}
         className={`w-full px-3 py-2 rounded-lg bg-surface border text-ink placeholder-muted text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors ${
@@ -90,14 +133,10 @@ export function FormInput({ label, id, error, ...props }) {
   );
 }
 
-export function FormSelect({ label, id, error, options, children, ...props }) {
+export function FormSelect({ label, id, error, hint, options, children, ...props }) {
   return (
     <div>
-      {label && (
-        <label htmlFor={id} className="block text-xs font-medium text-muted mb-1.5">
-          {label}
-        </label>
-      )}
+      <FieldLabel label={label} id={id} hint={hint} />
       <select
         id={id}
         className={`w-full px-3 py-2 rounded-lg bg-surface border text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors ${
@@ -118,12 +157,12 @@ export function FormSelect({ label, id, error, options, children, ...props }) {
   );
 }
 
-export function Modal({ open, title, onClose, children }) {
+export function Modal({ open, title, onClose, children, size = 'md' }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-border bg-surface shadow-2xl p-6">
+      <div className={`relative w-full ${size === 'lg' ? 'max-w-2xl' : 'max-w-md'} rounded-2xl border border-border bg-surface shadow-2xl p-6`}>
         <h3 className="text-lg font-bold text-ink font-serif mb-4">{title}</h3>
         {children}
       </div>

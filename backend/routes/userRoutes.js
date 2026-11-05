@@ -15,6 +15,26 @@ router.use(protect);
 router.get('/', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => userController.list(req, res, next));
 
 /**
+ * @route   GET /api/users/class-lists
+ * @desc    Class lists (programme + batch + section) with student counts
+ * @access  Admin, Coordinator (own department)
+ */
+router.get('/class-lists', authorize('admin', 'coordinator'), (req, res, next) => userController.listClassLists(req, res, next));
+
+/**
+ * @route   GET /api/users/class-lists/students?programmeId=&batch=&section=
+ * @access  Admin, Coordinator (own department)
+ */
+router.get('/class-lists/students', authorize('admin', 'coordinator'), (req, res, next) => userController.listClassStudents(req, res, next));
+
+/**
+ * @route   POST /api/users/class-lists
+ * @desc    Upload a class list; creates or updates student records by roll number
+ * @access  Admin, Coordinator (own department)
+ */
+router.post('/class-lists', authorize('admin', 'coordinator'), (req, res, next) => userController.uploadClassList(req, res, next));
+
+/**
  * @route   GET /api/users/:id
  * @desc    Get a single user by ID
  * @access  Admin, Coordinator, Faculty

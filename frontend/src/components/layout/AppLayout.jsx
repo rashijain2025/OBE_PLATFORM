@@ -17,6 +17,7 @@ import {
   Layers,
   Brain,
   Sparkles,
+  Settings2,
 } from 'lucide-react';
 
 export default function AppLayout() {
@@ -28,9 +29,11 @@ export default function AppLayout() {
     navigate('/login');
   };
 
+  // Each role has its own dashboard and pages, so land on the new role's dashboard right away
   const handleSwitchRole = async (targetRole) => {
     if (targetRole === user?.role) return;
-    await switchRole(targetRole);
+    const result = await switchRole(targetRole);
+    if (result.success) navigate('/dashboard');
   };
 
   // Define nav items configured per role
@@ -45,7 +48,8 @@ export default function AppLayout() {
           ...common,
           { to: '/users', label: 'User Directory', icon: Users },
           { to: '/coordinators', label: 'Coordinators', icon: UserCheck },
-          { to: '/departments', label: 'Departments & Progs', icon: Building2 },
+          { to: '/department-setup', label: 'School / Centre Setup', icon: Settings2 },
+          { to: '/departments', label: 'Schools / Centres & Progs', icon: Building2 },
           { to: '/courses', label: 'Courses', icon: BookOpen },
           { to: '/outcomes', label: 'PEO / PO / PSO', icon: Award },
           { to: '/mappings', label: 'CO-PO Mapping', icon: Layers },
@@ -59,8 +63,9 @@ export default function AppLayout() {
         return [
           ...common,
           { to: '/my-faculty', label: 'My Faculty', icon: Users },
+          { to: '/department-setup', label: 'School / Centre Setup', icon: Settings2 },
           { to: '/courses', label: 'Courses', icon: BookOpen },
-          { to: '/departments', label: 'Departments & Progs', icon: Building2 },
+          { to: '/departments', label: 'Schools / Centres & Progs', icon: Building2 },
           { to: '/outcomes', label: 'PEO / PO / PSO', icon: Award },
           { to: '/mappings', label: 'CO-PO Mapping', icon: Layers },
           { to: '/marks', label: 'Marks Entry & Review', icon: FileSpreadsheet },
@@ -152,7 +157,7 @@ export default function AppLayout() {
             </div>
             <p className="text-xs text-muted">
               {user?.rollNo ? `Roll: ${user.rollNo} · ` : ''}
-              {user?.department?.code ? `Dept: ${user.department.code} · ` : ''}
+              {user?.department?.code ? `School / Centre: ${user.department.code} · ` : ''}
               {user?.email}
             </p>
           </div>
@@ -201,7 +206,8 @@ export default function AppLayout() {
         {/* Page Content & Footer */}
         <div className="flex-1 flex flex-col min-w-0">
           <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
-            <Outlet />
+            {/* Keyed by role so the page remounts and refetches its data after a role switch */}
+            <Outlet key={user?.role} />
           </main>
 
           {/* Footer */}

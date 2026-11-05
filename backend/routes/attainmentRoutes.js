@@ -27,4 +27,11 @@ router.get('/report', authorize('admin', 'coordinator', 'faculty'), (req, res, n
  */
 router.get('/export', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => attainmentController.exportCSV(req, res, next));
 
+/**
+ * @route   GET /api/attainment/report.xlsx?courseId=...&target=40
+ * @desc    One-click course report workbook (summary, CO attainment, CO-PO matrix, papers, student-wise, remarks)
+ * @access  Admin, Coordinator, Faculty (must own course)
+ */
+router.get('/report.xlsx', authorize('admin', 'coordinator', 'faculty'), (req, res, next) => attainmentController.exportReport(req, res, next));
+
 module.exports = router;

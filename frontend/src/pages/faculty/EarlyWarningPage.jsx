@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { listCoursesApi } from '../../api/admin';
 import { getCoursePredictionsApi } from '../../api/prediction';
+import { InfoTip } from '../../components/ui/AdminUI';
 import {
   AlertTriangle,
   Sparkles,
@@ -126,6 +127,10 @@ export default function EarlyWarningPage() {
 
           <div className="flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-1.5">
             <span className="text-xs text-muted">Target %:</span>
+            <InfoTip
+              placement="bottom"
+              text="The CO score each student needs to reach. From marks entered so far, the model predicts how likely each student is to reach it, flags those unlikely to as at risk, and checks whether the class as a whole is on track."
+            />
             <input
               type="number"
               min="1"
